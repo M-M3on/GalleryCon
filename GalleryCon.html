@@ -9,7 +9,8 @@ CHANGELOG
 
 Version 2.9
 - About: GNU GPL v3.0 license and link to the source code (github.com/M-M3on/GalleryCon).
-- Footer and About: "Share it, use it, improve it · m-m3on · GPL v3".
+- Footer and About: "Share it, use it, improve it ~ m-m3on (Mikael Meon) ~ GPL v3".
+- Title: "by M. Meon" in small, to the right of the version number.
 - Bottom mention banner: white and fixed, bold centered text in a chosen color. Written in edit
   mode, turned on as soon as it holds a text; saved in the data folder and the standalone export.
 -->
@@ -78,11 +79,14 @@ h1 {
   line-height: 1;
   opacity: .8;
 }
-.app-version {
+.app-version,
+.app-author {
   margin-left: 8px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 500;
+  /* The title is tightened (-.04em): small text gets a normal spacing back. */
+  letter-spacing: .02em;
 }
 .actions {
   display: flex;
@@ -1426,7 +1430,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
     <div class="brand">
       <img class="brand-logo" src="data:image/webp;base64,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" alt="Gallery logo">
       <div>
-        <h1>GalleryCon<span class="app-version"></span></h1>
+        <h1>GalleryCon<span class="app-version"></span><span class="app-author">by M. Méon</span></h1>
         <p class="subtitle">An image collection automatically organized by folders.</p>
       </div>
     </div>
@@ -1514,7 +1518,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
   </section>
 </main>
 
-<footer>Share it, use it, improve it · m-m3on · GPL v3 ·
+<footer>Share it, use it, improve it ~ m-m3on (Mikael Meon) ~ GPL v3 ·
   <a href="https://github.com/M-M3on/" target="_blank" rel="noopener noreferrer">github.com/M-M3on</a></footer>
 
 <div id="mentionBanner" class="mention-banner" hidden>
@@ -1727,7 +1731,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
     <p class="about-license">Free software under the
       <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU General Public License v3.0</a>.
       Source code: <a href="https://github.com/M-M3on/GalleryCon" target="_blank" rel="noopener noreferrer">github.com/M-M3on/GalleryCon</a></p>
-    <p class="about-credit">Share it, use it, improve it · m-m3on · GPL v3</p>
+    <p class="about-credit">Share it, use it, improve it ~ m-m3on (Mikael Meon) ~ GPL v3</p>
   </div>
 </div>
 

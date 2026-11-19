@@ -1,0 +1,5496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GalleryCon</title>
+<!--
+CHANGELOG
+
+Version 2.9
+- About: GNU GPL v3.0 license and link to the source code (github.com/M-M3on/GalleryCon).
+- Footer and About: "Share it, use it, improve it · m-m3on · GPL v3".
+- Bottom mention banner: white and fixed, bold centered text in a chosen color. Written in edit
+  mode, turned on as soon as it holds a text; saved in the data folder and the standalone export.
+-->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #fafafa;
+  --surface: #fff;
+  --text: #18212b;
+  --muted: #6c7886;
+  --line: #e4e9ee;
+  --accent: #315efb;
+  --accent-light: #edf1ff;
+  --shadow: 0 8px 28px rgba(24,33,43,.07);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #fafafa !important;
+  background-image: none !important;
+  color: var(--text);
+  font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Footer stuck to the bottom of the window, even with little content. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+header {
+  position: relative;
+  padding: 30px max(22px, calc((100vw - 1440px)/2));
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.brand-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  flex: none;
+}
+h1 {
+  margin: 0;
+  font-size: clamp(25px, 4vw, 34px);
+  letter-spacing: -.04em;
+}
+.subtitle { margin: 6px 0 0; color: var(--muted); }
+.header-copyright {
+  position: absolute;
+  right: max(22px, calc((100vw - 1440px)/2));
+  bottom: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  opacity: .8;
+}
+.app-version {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.header-button-secondary {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.icon-button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+.icon-button:hover { background: var(--accent-light); color: var(--accent); }
+.about-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.about-head h2 { margin: 0; }
+.about-mark {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: var(--accent);
+  color: white;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+.about-logo {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.about-logo[hidden],
+.about-mark[hidden] { display: none; }
+.about-contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 13px;
+  text-decoration: none;
+}
+.about-contact span { color: var(--muted); }
+.about-contact strong { color: var(--accent); }
+.about-contact:hover { border-color: var(--accent); background: var(--accent-light); }
+.about-version { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.about-points {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.about-points li {
+  padding: 11px 14px;
+  background: #f8f9fb;
+  border-radius: 12px;
+}
+.about-points strong { display: block; font-size: 14px; }
+.about-points span { color: var(--muted); font-size: 13px; }
+.about-license {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+.about-license a { color: var(--accent); }
+.about-credit {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.unsaved-badge {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #9a5b00;
+  font-size: 12px;
+  font-weight: 650;
+}
+.unsaved-badge[hidden] { display: none; }
+body.modal-open { overflow: hidden; }
+
+/* Modals (menu, help, save, confirmation) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(9,13,20,.55);
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  padding: 28px 28px 24px;
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(9,13,20,.25);
+}
+.modal-wide { width: min(720px, 100%); }
+.modal h2 {
+  margin: 0 40px 6px 0;
+  font-size: 21px;
+  letter-spacing: -.02em;
+}
+.modal-intro {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.modal code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #f0f3f7;
+  font-size: .92em;
+}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  background: #f0f3f7;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.button-secondary {
+  background: #f0f3f7;
+  color: var(--text);
+}
+.button-danger { background: #d92d20; }
+.button-danger:hover { background: #feecec; color: #b42318; }
+.confirm-message { white-space: pre-line; }
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.text-field {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+.text-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(49,94,251,.1);
+}
+.field-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.field-error {
+  margin: 10px 0 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field-error[hidden] { display: none; }
+
+/* Menu */
+.menu-list { display: grid; gap: 10px; }
+.menu-item {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+.menu-item button { width: 100%; }
+.menu-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+@media(max-width:600px) {
+  .menu-item { grid-template-columns: 1fr; gap: 8px; }
+  .modal { padding: 24px 18px 18px; }
+}
+
+/* Help */
+.help-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.help-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f8f9fb;
+  border-radius: 13px;
+}
+.help-step-number {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 750;
+}
+.help-step strong { display: block; font-size: 14px; }
+.help-step p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.help-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.help-tree {
+  margin: 0;
+  padding: 14px 16px;
+  background: #18212b;
+  color: #dce5ff;
+  border-radius: 13px;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow: auto;
+}
+.help-stack { display: grid; gap: 12px; }
+.help-subtitle {
+  margin: 26px 0 4px;
+  font-size: 16px;
+  letter-spacing: -.01em;
+}
+.help-text {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.help-notes {
+  margin: 0;
+  padding: 12px 16px 12px 32px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* Save */
+.save-list { display: grid; gap: 8px; }
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.save-row-info { flex: 1; min-width: 0; }
+.save-row-info strong {
+  display: block;
+  font: 600 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.save-row-info span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.save-row-status:empty { display: none; }
+.save-row button { flex: none; padding: 7px 12px; font-size: 13px; }
+.save-row.is-done { background: #f1faf4; border-color: #c9ebd4; }
+.save-row.is-done .save-row-status { color: #1f7a3f; }
+.save-row.is-failed { background: #fff5f5; border-color: #f5c2c0; }
+.save-row.is-failed .save-row-status { color: #b42318; }
+.save-section-title {
+  margin: 18px 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.save-delete-list {
+  margin: 0;
+  padding-left: 20px;
+  font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.save-message {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.save-message[hidden] { display: none; }
+.save-done { background: #f1faf4; color: #1f7a3f; }
+.save-empty { background: #f8f9fb; color: var(--muted); }
+.save-hints {
+  margin: 16px 0 0;
+  padding: 12px 14px 12px 30px;
+  background: #f8f9fb;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* Error card */
+#errorCard {
+  margin: -8px 0 22px;
+  padding: 15px 17px;
+  background: #fff8f7;
+  border: 1px solid #f5c2c0;
+  border-radius: 14px;
+}
+.error-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.error-card-head strong { color: #b42318; font-size: 14px; }
+.error-card-head button {
+  padding: 5px 11px;
+  background: white;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+.error-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #5b2320;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.error-list li span { color: var(--muted); }
+
+/* Images loaded on demand */
+@keyframes gallerycon-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+.photo.is-loading {
+  background: linear-gradient(90deg, #f1f3f6 30%, #e6eaf0 50%, #f1f3f6 70%);
+  background-size: 200% 100%;
+  animation: gallerycon-shimmer 1.3s linear infinite;
+}
+img.is-pending,
+.is-missing img { visibility: hidden; }
+.photo.is-missing::after,
+#viewerStage.is-missing::after {
+  content: 'Image unavailable';
+  position: absolute;
+  color: var(--muted);
+  font-size: 13px;
+}
+#viewerStage.is-missing::after { color: rgba(255,255,255,.6); }
+button, .pick-label {
+  border: 0;
+  border-radius: 11px;
+  padding: 11px 16px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform .15s, opacity .15s, background .15s;
+}
+button:hover, .pick-label:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+button:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+#folderInput,
+#imageInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+main {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  flex: 1 0 auto;
+  padding: 26px 22px 60px;
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+footer {
+  padding: 22px 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+#summary { color: var(--muted); }
+#search {
+  width: min(340px, 100%);
+  border: 1px solid var(--line);
+  background: white;
+  padding: 11px 14px;
+  border-radius: 11px;
+  font: inherit;
+  outline: none;
+}
+#search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(49,94,251,.1);
+}
+#toggleCards {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+#toggleCards:hover { background: var(--accent-light); color: var(--accent); }
+.toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.scale-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: white;
+}
+.scale-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 0 3px;
+}
+.scale-control button {
+  min-width: 30px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 17px;
+  line-height: 1.2;
+}
+.scale-control button:hover { background: var(--accent); color: white; }
+#scaleValue {
+  min-width: 48px;
+  text-align: center;
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+#filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 26px;
+}
+.filter-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px 17px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 3px 12px rgba(24,33,43,.025);
+}
+.filter-label {
+  flex: 0 0 125px;
+  padding-top: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.filter-chip {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #f8f9fb;
+  color: #45515e;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: all .15s;
+}
+.filter-chip:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+  transform: none;
+}
+.filter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.filter-chip.all-chip { font-weight: 750; }
+.filter-summary {
+  margin: -12px 0 22px;
+  padding: 0 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.filter-summary strong { color: var(--text); }
+.filter-summary:empty { display: none; }
+#filterSummary:not(:empty) + #specSummary:not(:empty) { margin-top: -16px; }
+body.filters-hidden #specificationFilters { display: none !important; }
+#filters[hidden] { display: none !important; }
+
+/* Technical specification search */
+#specificationFilters {
+  margin: -8px 0 24px;
+  padding: 17px;
+  background: #ffffff;
+  background-image: none !important;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 3px 12px rgba(24,33,43,.025);
+}
+.spec-search-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 13px;
+}
+.spec-search-heading h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.spec-search-heading p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.spec-criteria {
+    background: transparent;
+    background-image: none !important;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+    gap: 10px;
+    width: 100%;
+}
+.spec-criterion {
+    display: grid;
+    align-items: center;
+    gap: 6px 10px;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+.spec-criterion-label {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 650;
+}
+.spec-criterion-label small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.spec-country {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  align-content: start;
+}
+.spec-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.spec-chips:empty { display: none; }
+.spec-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 12px;
+}
+.spec-chip::after { content: " ×"; }
+.spec-chip:hover { background: #dfe6ff; }
+.spec-criterion input,
+.spec-country input,
+.spec-picker select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.spec-criterion input:focus,
+.spec-country input:focus,
+.spec-picker select:focus {
+  outline: 2px solid rgba(49,94,251,.18);
+  border-color: var(--accent);
+}
+.spec-remove {
+  padding: 6px 10px;
+  background: #f0f3f7;
+  color: var(--muted);
+  font-size: 12px;
+}
+.spec-remove:hover { background: #feecec; color: #b42318; }
+.spec-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 13px;
+}
+.spec-actions button { padding: 8px 12px; font-size: 12px; }
+.spec-secondary {
+  background: #f0f3f7;
+  color: var(--text);
+}
+.spec-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.spec-picker[hidden] { display: none; }
+.spec-picker select { width: min(420px, 100%); }
+.spec-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+@media(max-width:700px) {
+  .spec-remove { justify-self: end; }
+}
+
+/* Gallery */
+#gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--gallery-card-min-width, 320px)), 1fr));
+  gap: 22px;
+}
+.category-section { grid-column: 1 / -1; min-width: 0; }
+.category-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 14px;
+}
+.category-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 750;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+.category-rule { height: 1px; flex: 1; background: var(--line); }
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--gallery-card-min-width, 320px)), 1fr));
+  gap: 22px;
+}
+.card {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  box-shadow: var(--shadow);
+}
+.card-head {
+  padding: 16px 17px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.card-head > div {
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.card h2 {
+  font-size: 16px;
+  line-height: 1.35;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 100%;
+}
+.path {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  min-height: 2.7em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.photo {
+  position: relative;
+  background: white;
+  aspect-ratio: 16 / 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+.nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 37px;
+  height: 37px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(18,25,35,.72);
+  color: white;
+  font-size: 24px;
+  line-height: 1;
+}
+.nav.prev { left: 12px; }
+.nav.next { right: 12px; }
+.nav:disabled { opacity: .22; }
+.photo-index {
+  position: absolute;
+  bottom: 11px;
+  right: 12px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: rgba(18,25,35,.72);
+  color: white;
+  font-size: 12px;
+  pointer-events: none;
+}
+.empty {
+  grid-column: 1 / -1;
+  padding: 65px 20px;
+  text-align: center;
+  border: 1px dashed #cbd3dd;
+  border-radius: 18px;
+  color: var(--muted);
+  background: rgba(255,255,255,.55);
+}
+.empty strong {
+  display: block;
+  color: var(--text);
+  font-size: 18px;
+  margin-bottom: 7px;
+}
+
+/* Full-screen image viewer: image on the left, specifications on the right */
+#viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(9,13,20,.97);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px 16px;
+  color: white;
+}
+#viewer.open { display: flex; }
+.viewer-topbar {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+}
+.viewer-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.viewer-actions button {
+  padding: 8px 13px;
+  background: rgba(255,255,255,.12);
+  color: white;
+  border: 1px solid rgba(255,255,255,.18);
+  font-size: 13px;
+}
+.viewer-actions button:hover { background: rgba(255,255,255,.22); color: white; }
+.viewer-actions button[hidden] { display: none; }
+.viewer-actions .viewer-add-specifications { background: #315efb; border-color: #315efb; }
+.viewer-actions .viewer-add-specifications:hover { background: #4b72ff; }
+#viewerClose { font-size: 22px; line-height: 1; padding: 5px 12px; }
+#viewerMeta {
+  min-width: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+#viewerMeta strong { display: block; font-size: 17px; letter-spacing: -.01em; }
+#viewerMeta span { display: block; color: rgba(255,255,255,.62); font-size: 12px; }
+#viewerMeta .viewer-meta-categories {
+  color: rgba(255,255,255,.85);
+  font-size: 13px;
+  font-weight: 700;
+}
+.viewer-meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+#viewerMeta .viewer-meta-edit {
+  padding: 2px 10px;
+  border: 1px solid rgba(157,184,255,.45);
+  border-radius: 999px;
+  background: rgba(157,184,255,.12);
+  color: #c7d5ff;
+  font-size: 11px;
+  font-weight: 600;
+}
+#viewerMeta .viewer-meta-edit:hover { background: rgba(157,184,255,.25); color: white; }
+.viewer-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+#viewer.has-panel:not(.specs-collapsed) .viewer-body {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+}
+.viewer-media {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#viewerStage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#viewerStage img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+#viewer.fit-mode #viewerStage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.viewer-nav {
+  position: absolute;
+  top: calc(50% - 46px);
+  transform: translateY(-50%);
+  width: 44px;
+  height: 60px;
+  padding: 0;
+  border-radius: 12px;
+  background: rgba(255,255,255,.13);
+  color: white;
+  font-size: 34px;
+  line-height: 1;
+}
+.viewer-nav:hover { background: rgba(255,255,255,.25); color: white; }
+.viewer-prev { left: 6px; }
+.viewer-next { right: 6px; }
+.viewer-nav:disabled { opacity: .2; cursor: default; }
+#viewerCaption {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 10px 0;
+  color: rgba(255,255,255,.88);
+  text-align: center;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+#viewerCounter { color: rgba(255,255,255,.6); white-space: nowrap; }
+.viewer-thumbs {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 2px 4px;
+}
+.viewer-thumbs[hidden] { display: none; }
+.viewer-thumbs > :first-child { margin-left: auto; }
+.viewer-thumbs > :last-child { margin-right: auto; }
+.viewer-thumb {
+  position: relative;
+  flex: none;
+  width: 68px;
+  height: 50px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: rgba(255,255,255,.08);
+  opacity: .62;
+}
+.viewer-thumb:hover { background: rgba(255,255,255,.14); opacity: 1; }
+.viewer-thumb.active { border-color: #9db8ff; opacity: 1; }
+.viewer-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.viewer-thumb-add {
+  border: 2px dashed rgba(157,184,255,.5);
+  background: transparent;
+  color: #c7d5ff;
+  font-size: 26px;
+  font-weight: 400;
+  opacity: 1;
+}
+.viewer-thumb-add:hover { background: rgba(157,184,255,.15); color: white; }
+#viewerCaption .viewer-delete-image {
+  padding: 3px 10px;
+  border: 1px solid rgba(240,80,70,.45);
+  background: rgba(240,80,70,.18);
+  color: #ffd2d2;
+  font-size: 12px;
+}
+#viewerCaption .viewer-delete-image:hover { background: rgba(240,80,70,.35); color: white; }
+#viewerCaption .viewer-delete-image[hidden] { display: none; }
+
+/* Specifications panel */
+#viewerSpecifications {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  background: rgba(255,255,255,.05);
+}
+#viewerSpecifications[hidden],
+#viewer.specs-collapsed #viewerSpecifications { display: none; }
+.viewer-spec-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.viewer-spec-header strong { font-size: 13px; }
+.viewer-spec-header button {
+  padding: 5px 11px;
+  background: #315efb;
+  color: white;
+  font-size: 12px;
+}
+.viewer-spec-header button:hover { background: #4b72ff; color: white; }
+.viewer-spec-header button[hidden] { display: none; }
+#viewerSpecificationsContent {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 14px 14px;
+}
+.spec-empty {
+  margin: 10px 0;
+  color: rgba(255,255,255,.6);
+  font-size: 13px;
+}
+.spec-tree-group {
+  margin: 8px 0;
+  padding: 8px 11px;
+  border-left: 2px solid rgba(130,160,255,.75);
+  background: rgba(255,255,255,.045);
+  border-radius: 0 8px 8px 0;
+}
+.spec-tree-heading {
+  margin-bottom: 4px;
+  color: #dce5ff;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.spec-tree-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 4px 0;
+  color: rgba(255,255,255,.75);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.spec-tree-row:last-child { border-bottom: 0; }
+.spec-tree-row strong {
+  color: white;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.spec-tree-row a {
+  color: #9db8ff;
+  text-decoration: underline;
+}
+.spec-error {
+  padding: 10px 0;
+  color: #ffd2d2;
+  font-size: 12px;
+}
+
+/* Specification editor (edit mode) */
+.spec-editor { display: grid; gap: 12px; padding-top: 8px; }
+.spec-edit-section {
+  padding: 10px 11px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.spec-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.spec-edit-head strong { color: #dce5ff; font-size: 12px; }
+.spec-editor input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px;
+  background: rgba(255,255,255,.07);
+  color: white;
+  font: inherit;
+  font-size: 13px;
+}
+.spec-editor input::placeholder { color: rgba(255,255,255,.4); }
+.spec-editor input:focus { outline: 2px solid rgba(157,184,255,.5); border-color: #9db8ff; }
+.spec-editor button {
+  padding: 5px 10px;
+  background: rgba(255,255,255,.1);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+.spec-editor button:hover { background: rgba(255,255,255,.2); color: white; }
+.spec-edit-remove { color: rgba(255,255,255,.65) !important; }
+.spec-edit-remove:hover { background: rgba(240,80,70,.3) !important; }
+.spec-edit-rows { display: grid; gap: 6px; }
+.spec-edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 64px auto;
+  gap: 6px;
+  align-items: center;
+}
+.spec-edit-row button { padding: 5px 9px; }
+.spec-edit-adds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.spec-editor .spec-edit-add {
+  background: transparent;
+  border: 1px dashed rgba(157,184,255,.55);
+  color: #c7d5ff;
+  font-weight: 500;
+}
+.spec-editor .spec-edit-add:hover { background: rgba(157,184,255,.15); }
+.spec-edit-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.spec-edit-chips:empty { display: none; }
+.spec-editor .spec-edit-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(157,184,255,.18);
+  color: white;
+  font-weight: 500;
+}
+.spec-editor .spec-edit-chip::after { content: " ×"; color: rgba(255,255,255,.6); }
+.spec-edit-line { display: flex; gap: 6px; }
+.spec-edit-note { margin: 0; color: rgba(255,255,255,.55); font-size: 12px; }
+.spec-edit-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(240,80,70,.18);
+  color: #ffd2d2;
+  font-size: 12px;
+}
+.spec-edit-footer {
+  position: sticky;
+  bottom: -14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 -14px -14px;
+  padding: 12px 14px;
+  background: #1b2029;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.spec-editor .spec-edit-save { background: #315efb; }
+.spec-editor .spec-edit-save:hover { background: #4b72ff; }
+
+@media(max-width:900px) {
+  #viewer.has-panel:not(.specs-collapsed) .viewer-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 42vh);
+  }
+}
+
+/* Edit mode */
+.edit-badge {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #edf1ff;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+.edit-badge:hover { background: #dfe6ff; color: var(--accent); }
+.edit-badge[hidden] { display: none; }
+.edit-badge::after { content: " ×"; opacity: .7; }
+.edit-bar {
+  position: sticky;
+  top: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: -8px 0 22px;
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.edit-bar[hidden] { display: none; }
+#editSelectionCount { font-size: 13px; font-weight: 650; }
+.edit-bar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.edit-bar-actions button { padding: 7px 12px; font-size: 13px; }
+.card-select {
+  flex: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin: -3px -4px 0 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.card-select:hover { background: var(--accent-light); }
+.card-select input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+body.edit-mode .card-select { display: flex; }
+body.edit-mode .card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+}
+#saveStatus { color: var(--muted); font-size: 12px; }
+
+/* Bottom mention banner: white, fixed, above the viewer and the windows.
+   Shown when it holds a text, and always in edit mode to write it. */
+:root { --mention-height: 40px; }
+.mention-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--mention-height);
+  padding: 0 14px;
+  background: #fff;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(24,33,43,.06);
+}
+.mention-banner[hidden] { display: none; }
+.mention-text {
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.mention-editor { display: none; align-items: center; gap: 8px; width: min(760px, 100%); }
+body.edit-mode .mention-text { display: none; }
+body.edit-mode .mention-editor { display: flex; }
+#mentionInput {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 10px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+}
+#mentionInput:focus { border-style: solid; box-shadow: 0 0 0 3px var(--accent-light); }
+#mentionInput::placeholder { color: var(--muted); font-weight: 500; }
+#mentionColor {
+  flex: none;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+/* The banner takes room: the page, the viewer and the windows stop above it. */
+body.has-mention { padding-bottom: var(--mention-height); }
+body.has-mention #viewer,
+body.has-mention .modal-backdrop { bottom: var(--mention-height); }
+body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height)); }
+
+@media(max-width:700px) {
+  header { padding: 24px 18px; }
+  main { padding: 20px 14px 40px; }
+  #gallery { gap: 15px; }
+  #viewer { padding: 10px 10px 12px; }
+  .viewer-nav { width: 36px; height: 50px; font-size: 28px; }
+  .viewer-actions button { padding: 7px 10px; }
+  .spec-edit-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .toolbar-controls { width: 100%; justify-content: space-between; }
+  .filter-row { flex-direction: column; gap: 9px; }
+  .filter-label { flex: auto; padding-top: 0; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="topline">
+    <div class="brand">
+      <img class="brand-logo" src="data:image/webp;base64,UklGRkoHAABXRUJQVlA4ID4HAAAQJwCdASpgAEAAPjEWiEKiISEUq29IIAMEtABovDlC7+U/EDmyuW/jH6O5bguNwD+3eoD7meqP/kv0l9yv6m+oD9R/2M91j0NegB+lHWAfrv7AH60+mL+0nweftz+3PwC/sFq3KaX4zdZZ4l9Vfx40xfmV9g/IX8oPiDcT/1D8i/5nxCUsHkd/OP7j+R/5EetP/GegH079Dv8y/035jczD3N7AH8x/nP+f/rv7Z/1z4dv7P++/k57UPyv+zf7L/Ffut9A38h/nv+Z/t/+I/5f+B////n+zv11/uH7G37DqEan8bHujnVAYLnrWAPw7YqB3YeF2VWleFsYPKzpn5mmjIRv2GnGNZFqKdTCyum2VLL6sCSpsMMmRTjNPhaAze9fXi/nP6WPDHdc9s/DBpLC+N+9XI9LpxHKFPJbkjGbXvAAA/v72LQuF+sp1oVevspPgd5xz9zlqI+Mfprhp3s9ec/jjlfBMPJf33HJkccY/7z2fZxzKfzcLNny7UcOcAx4ZJt+El6jYgGaCGlnOC8dzcb4KJ7ehBYn6JfWa6Gdc3QOSajsW7r2eZ/WJ4fBRL//x2dQAk0rnhk6OiVHlZYdEpwdfYIyHv2zzpw68+5F9XogOF24QqP9IujhbIrn3kS5CvHqOLH2FBOzm8dbmDizc/p4H9nkPYIPBe8qkaU7vn1pNFrJ1g9YSAzLLJXpcBo1Cc/HIlKwofP1ATy3hWBovbh02xC7DJv4BcCZ6iOzH6t9rdi99ElcM/1/uFN5vnNRrrbA3ui2b+UHBw1VmEImLdA0B+8G+GYEZff/7KY/59pCdsRg3IP6F5ctKMq2eg3twS0JtuCLsSZxVDV8ChSF+2oyG+Bfof293nDaGnzPwYo5WTm4MOfKJqPMpe9XmnFNmNOpzbNtf8YtF4+gs//GOJZkgrSYLSOBckEptAcGsZpRapx0Og/4zmbnsom2UjFV7YLJyJrN+EGouN4urKXgxvNcpbpo5OBtAXRWe07JccRYErXydxtdTmDtVk1Wh+ZY4fHBh/RMnIRaXT0c05f5amZcKSRAQkt0XRepz+rlSCQk2FhE2Iiudr8mw8lflcK4YnzKPHyPyoNfJJp6u/vTrtoXkAQ6qC7xRQMSSxLLnPBnnXLU+KFGWoY3xQH2YoEbrImxYbDw1m+KuWvmsCP2DdhWLOYwgNdb3d9aN/IDxzYbJq4ibXBqvCSq+TMgGuIuGFaYKxxQ4k24P5SvoM7QKHH+zBBt6rl4fDsOoBbOVOfTL7an/EEq5fZthpv4fJCb/XWxG/ecTqKM/1vz85xOosCr3+mMxy669YDMSbvwarRyEizXTh12fLlGXRo0awA4QcE9Wu+cN5FdvTvvfjrZk/sfiN9kl9G/DQ4DfUd24WevPti7TDPOG2P4fJssNSFRF7VzbwYkU1HEdE4pKsmr+AVB260btG2rNTExrFDeKOAfeB5f/zTK2nXFNo0yakGNDh0czJRtnFgz8ZNn3y4b/+9bfez0zL5i0AC9J7PynxS8tP//XDlVFapnh4PEhlfxRxidZHb8ULlWLrjQRWB8eGrO6eEeIJwmFfrrRG22weA1LQIqUiqz/ADwMr5C0CJMt2bjaRiXQRovvja4l86/itDNBowO/XsB8jeKG0V9UH+k00uy2lZ4Af9r45p0lfiOQWAgUconK1yqwweed64WIxKOYUz1RhhAX98vGr9nUh+zxPqMIdildqy5LWfv5gTj95G59F6sgpGK1yp5+FRR6ld6E0JF/RuzlbbM/w0h0wX/eDJrpfrMxU8ylf1/Z/yaJ5ff/mBD5wdQFAt5En4DV8+oN4L8btXgPS//DletEXMkM601SQFdEtEcY8L3JI6p3THUYQegqzKzW0J+/0A/nKUg28f7zxfsxltOXfqj6XZuengpTs/k/bcIfCVLW917LaNH9CZaAZ68LHVXSZixV4wHPY7ahRKQdrLnSkWK9wGmwvh/IlizvqrQ78FEpOy0/pPL6Ny8GwGuQlBm5ToY0jlAnQIAKrmLF3LIfRgBWRSGDI/cef8trPcx9kEHw3o4WOPxIf0QSOIb2OguaulsP8WvBzXLrbSqDp7NM6c1bydepH7MJYPvp//i9wkMnnbOqFC1Hihl7Zcxz+QVnpdzH2dQke4cNtFgw8otzJnLBlDPbH5wqaVEEqSEWJTsy2q1TKXYwLoDXB70lfACVX7UcSueuwdbx260K+/5eD9tJmFj6K3JRXmjqRrcD46j53xp7lwhTSKjQtKUncvbGLoBiV9J3BYsa7RSsbxIyoUHPmrOG28AdFKZRKqMAQsqZ8P5wDYi87fb0YRFleNs0pk/xKtmbZ/N5w053S0LFsiFKwcnBEonJJru/Y7VjZekxuIYAhTmMMtuyNZT6p8Us/zeJuNHz8pqYjAjuBo8lrcFviqa+9EGegRqvWz6ZXCZ53ggYUrLMSS8593vqcwCm0CuovZkPCHy7+8dUYFM3gAA=" alt="Gallery logo">
+      <div>
+        <h1>GalleryCon<span class="app-version"></span></h1>
+        <p class="subtitle">An image collection automatically organized by folders.</p>
+      </div>
+    </div>
+    <div class="actions">
+      <span id="saveStatus" role="status" aria-live="polite"></span>
+      <span id="unsavedBadge" class="unsaved-badge" hidden>Unsaved changes</span>
+      <button id="editBadge" class="edit-badge" type="button" hidden title="Turn off edit mode">Edit mode</button>
+      <button id="aboutButton" class="icon-button" type="button" aria-label="About GalleryCon" title="About">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="12" y1="10.8" x2="12" y2="16.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+          <circle cx="12" cy="7.7" r="1.25" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="helpButton" class="header-button-secondary" type="button">Help</button>
+      <button id="menuButton" type="button">Menu</button>
+      <input id="folderInput" type="file" webkitdirectory directory multiple>
+      <input id="imageInput" type="file" accept="image/*" multiple>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div id="summary">Open the Menu to add a folder.</div>
+    <input id="search" type="search" placeholder="Search for a category or image..." hidden>
+    <div class="toolbar-controls">
+      <div class="scale-control" role="group" aria-label="Gallery card size">
+        <span class="scale-label">Scale</span>
+        <button id="scaleDown" type="button" aria-label="Make gallery cards smaller" title="Make cards smaller">−</button>
+        <span id="scaleValue" aria-live="polite">320 px</span>
+        <button id="scaleUp" type="button" aria-label="Make gallery cards larger" title="Make cards larger">+</button>
+      </div>
+      <button id="toggleCards" type="button">Hide filters</button>
+    </div>
+  </div>
+
+  <section id="errorCard" hidden aria-live="polite">
+    <div class="error-card-head">
+      <strong id="errorCardTitle">Errors</strong>
+      <button id="errorCardClose" type="button">Dismiss</button>
+    </div>
+    <ul id="errorList" class="error-list"></ul>
+  </section>
+
+  <div id="editBar" class="edit-bar" hidden>
+    <span id="editSelectionCount">No folder selected</span>
+    <div class="edit-bar-actions">
+      <button id="editSelectShown" class="button-secondary" type="button">Select all shown</button>
+      <button id="editClearSelection" class="button-secondary" type="button">Clear selection</button>
+      <button id="editChangeCategory" class="button-secondary" type="button" disabled>Change category</button>
+      <button id="editDeleteSelected" class="button-danger" type="button" disabled>Delete</button>
+    </div>
+  </div>
+
+  <section id="filters"></section>
+  <section id="specificationFilters" hidden aria-label="Technical specification search">
+    <div class="spec-search-heading">
+      <div>
+        <h2>Technical specifications</h2>
+        <p>Search numerical properties (lengths in metres) with a target value and a tolerance, or filter by country.</p>
+      </div>
+    </div>
+    <div id="specificationCriteria" class="spec-criteria"></div>
+    <div class="spec-actions">
+      <button id="addSpecification" type="button">+ Add specification</button>
+      <button id="clearSpecifications" class="spec-secondary" type="button">Clear values</button>
+    </div>
+    <div id="specificationPicker" class="spec-picker" hidden>
+      <select id="specificationSelect" aria-label="Choose a specification"></select>
+      <button id="confirmSpecification" type="button">Add</button>
+      <button id="cancelSpecification" class="spec-secondary" type="button">Cancel</button>
+    </div>
+    <p id="specificationNote" class="spec-note"></p>
+  </section>
+
+  <div id="filterSummary" class="filter-summary"></div>
+  <div id="specSummary" class="filter-summary"></div>
+  <section id="gallery">
+    <div class="empty">
+      <strong>The gallery is empty</strong>
+      Open the Menu and add a folder: its subfolders containing images
+      will appear here.
+    </div>
+  </section>
+</main>
+
+<footer>Share it, use it, improve it · m-m3on · GPL v3 ·
+  <a href="https://github.com/M-M3on/" target="_blank" rel="noopener noreferrer">github.com/M-M3on</a></footer>
+
+<div id="mentionBanner" class="mention-banner" hidden>
+  <span id="mentionText" class="mention-text"></span>
+  <div class="mention-editor">
+    <input id="mentionInput" type="text" maxlength="200" autocomplete="off"
+           placeholder="Bottom banner: type a text to turn it on (empty = no banner)"
+           aria-label="Bottom banner text">
+    <input id="mentionColor" type="color" value="#18212b"
+           title="Text color" aria-label="Bottom banner text color">
+  </div>
+</div>
+
+<div id="viewer" aria-modal="true" role="dialog" aria-label="Image viewer">
+  <div class="viewer-topbar">
+    <div id="viewerMeta"></div>
+    <div class="viewer-actions">
+      <button id="viewerAddSpecifications" class="viewer-add-specifications" type="button" hidden>+ Add specifications</button>
+      <button id="viewerSpecificationsToggle" type="button">Hide specifications</button>
+      <button id="viewerFit" type="button">Fit to window</button>
+      <button id="viewerClose" type="button" aria-label="Close">×</button>
+    </div>
+  </div>
+  <div class="viewer-body">
+    <div class="viewer-media">
+      <div id="viewerStage"><img alt=""></div>
+      <button id="viewerPrev" class="viewer-nav viewer-prev" type="button" aria-label="Previous image">‹</button>
+      <button id="viewerNext" class="viewer-nav viewer-next" type="button" aria-label="Next image">›</button>
+      <div id="viewerCaption">
+        <span id="viewerFilename"></span>
+        <span id="viewerCounter"></span>
+        <button id="viewerDeleteImage" class="viewer-delete-image" type="button" hidden>Delete image</button>
+      </div>
+      <div id="viewerThumbs" class="viewer-thumbs" aria-label="Images of this folder"></div>
+    </div>
+    <section id="viewerSpecifications" hidden aria-label="Technical specifications">
+      <div class="viewer-spec-header">
+        <strong>Technical specifications</strong>
+        <button id="viewerSpecificationsEdit" type="button" hidden>Edit</button>
+      </div>
+      <div id="viewerSpecificationsContent"></div>
+    </section>
+  </div>
+</div>
+
+<div id="menuModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+  <div class="modal">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="menuTitle">Menu</h2>
+    <p class="modal-intro">Build, save and share your gallery.</p>
+    <div class="menu-list">
+      <div class="menu-item">
+        <button id="menuAddFolder" type="button">Add a folder</button>
+        <p>Adds the folders of a tree to the current gallery. Your folder is never modified.</p>
+      </div>
+      <div class="menu-item">
+        <button id="menuReplaceFolder" class="button-secondary" type="button">Replace with a folder</button>
+        <p>Empties the gallery and rebuilds it from a folder.</p>
+      </div>
+      <div class="menu-item">
+        <button id="menuEditMode" class="button-secondary" type="button">Turn on edit mode</button>
+        <p>Select and delete folders, edit specifications in the image viewer, and write the bottom banner.</p>
+      </div>
+      <div class="menu-item">
+        <button id="menuSave" type="button">Save changes</button>
+        <p id="menuSaveDescription">Lists the modified files to download into the data folder.</p>
+      </div>
+      <div class="menu-item">
+        <button id="menuExport" class="button-secondary" type="button">Export standalone HTML</button>
+        <p>One single file with everything inside. Above 50 MB, it may slow down or crash the browser.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="helpModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal modal-wide">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="helpTitle">How GalleryCon works</h2>
+    <p class="modal-intro">Your image folders become a gallery you can filter, save and share.</p>
+    <ol class="help-steps">
+      <li class="help-step">
+        <span class="help-step-number">1</span>
+        <div>
+          <strong>Import a folder</strong>
+          <p>Menu → Add or Replace. Each folder with images becomes a card; its parent folders become categories.</p>
+        </div>
+      </li>
+      <li class="help-step">
+        <span class="help-step-number">2</span>
+        <div>
+          <strong>Add specifications</strong>
+          <p>An optional <code>specifications.json</code> in a folder adds technical data: dimensions, countries, links.</p>
+        </div>
+      </li>
+      <li class="help-step">
+        <span class="help-step-number">3</span>
+        <div>
+          <strong>Browse</strong>
+          <p>Filter by category, search by name or by specification. Click an image to enlarge it.</p>
+        </div>
+      </li>
+      <li class="help-step">
+        <span class="help-step-number">4</span>
+        <div>
+          <strong>Edit</strong>
+          <p>Menu → Edit mode. Tick cards to delete them or change their category. In the image viewer, add or delete images and edit the specifications. Type a text in the bottom banner (and pick its color) to show it on every page; leave it empty to remove it.</p>
+        </div>
+      </li>
+      <li class="help-step">
+        <span class="help-step-number">5</span>
+        <div>
+          <strong>Save</strong>
+          <p>Menu → Save changes. Download the listed files and copy them into the <code>data</code> folder.</p>
+        </div>
+      </li>
+      <li class="help-step">
+        <span class="help-step-number">6</span>
+        <div>
+          <strong>Share</strong>
+          <p>Share the whole GalleryCon folder, or export one standalone HTML file (best under 50 MB).</p>
+        </div>
+      </li>
+    </ol>
+    <div class="help-columns">
+      <pre class="help-tree">GalleryCon/
+├── GalleryCon.html
+└── data/
+    ├── gc_specifications.js
+    ├── gc_covers-01.js
+    └── gc_images-01.js</pre>
+      <ul class="help-notes">
+        <li>Your source folders are never modified.</li>
+        <li>Images load as you scroll.</li>
+        <li>Keep GalleryCon.html and <code>data</code> together.</li>
+      </ul>
+    </div>
+
+    <h3 class="help-subtitle">Writing a specifications.json</h3>
+    <p class="help-text">Optional. Put it in a folder, next to its images. Every field is optional.</p>
+    <div class="help-stack">
+      <pre class="help-tree">{
+  "alternateDesignations": ["AMX-56"],
+  "origin": ["France (FRA)"],
+  "proliferation": ["France", "United Arab Emirates", "Jordan"],
+  "dimensions": [
+    { "name": "Length", "value": "9.87", "units": "m" },
+    { "name": "Width", "value": "3.71", "units": "m" },
+    { "name": "Weight, Combat", "value": "56.5", "units": "t" }
+  ],
+  "odinUrl": "https://…"
+}</pre>
+      <ul class="help-notes">
+        <li><code>origin</code> and <code>proliferation</code>: countries for the filters.</li>
+        <li><code>dimensions</code>: one line per value, with <code>name</code>, <code>value</code> and <code>units</code>.</li>
+        <li>Values are text: <code>"9.87"</code>, <code>"25 cm"</code>. <code>"INA"</code> or ranges are shown but not searchable.</li>
+        <li>Lengths need a unit (mm, cm, m, km, in, ft, yd) to be searchable.</li>
+        <li>Edited by hand? Use Replace with a folder: Add keeps the specifications already in the gallery.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div id="saveModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
+  <div class="modal modal-wide">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="saveTitle">Save changes</h2>
+    <p class="modal-intro">Download these files, then copy them into the <code>data</code> folder next to GalleryCon.html, replacing the old ones.</p>
+    <div id="saveList" class="save-list"></div>
+    <p id="saveEmpty" class="save-message save-empty" hidden>Nothing to save: the data folder is up to date.</p>
+    <div id="saveDeleteSection" hidden>
+      <div class="save-section-title">Files to delete from the data folder</div>
+      <ul id="saveDeleteList" class="save-delete-list"></ul>
+    </div>
+    <p id="saveDone" class="save-message save-done" hidden>All files are downloaded. Copy them into the data folder to finish saving.</p>
+    <ul class="save-hints">
+      <li>Only the modified files are listed.</li>
+      <li>If the browser renames a file (<code>gc_images-01 (1).js</code>), give it back its exact name.</li>
+      <li>The browser may ask permission to download several files: accept it.</li>
+    </ul>
+    <div class="modal-footer">
+      <button class="button-secondary" type="button" data-close>Close</button>
+      <button id="saveAll" type="button">Download all</button>
+    </div>
+  </div>
+</div>
+
+<div id="aboutModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="modal">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <div class="about-head">
+      <!-- The header logo is copied here when the window opens: one base64 copy only. -->
+      <img id="aboutLogo" class="about-logo" alt="" hidden>
+      <div id="aboutMark" class="about-mark" aria-hidden="true">GC</div>
+      <div>
+        <h2 id="aboutTitle">GalleryCon</h2>
+        <p class="about-version">Version <span class="app-version-number"></span></p>
+      </div>
+    </div>
+    <p class="modal-intro">An image gallery built from your folders, running entirely in your browser.</p>
+    <ul class="about-points">
+      <li><strong>No server, no installation</strong><span>One HTML file and its data folder.</span></li>
+      <li><strong>Private</strong><span>Your images never leave your computer.</span></li>
+      <li><strong>Every browser</strong><span>Chrome, Edge, Firefox and Safari.</span></li>
+    </ul>
+    <a class="about-contact" href="https://github.com/M-M3on/" target="_blank" rel="noopener noreferrer">
+      <span>Contact me</span>
+      <strong>github.com/M-M3on</strong>
+    </a>
+    <p class="about-license">Free software under the
+      <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU General Public License v3.0</a>.
+      Source code: <a href="https://github.com/M-M3on/GalleryCon" target="_blank" rel="noopener noreferrer">github.com/M-M3on/GalleryCon</a></p>
+    <p class="about-credit">Share it, use it, improve it · m-m3on · GPL v3</p>
+  </div>
+</div>
+
+<div id="categoryModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="categoryTitle">
+  <div class="modal">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="categoryTitle">Change category</h2>
+    <p id="categoryModalTarget" class="modal-intro"></p>
+    <label class="field-label" for="categoryInput">Category</label>
+    <input id="categoryInput" class="text-field" type="text" list="categoryList" autocomplete="off"
+           placeholder="Land / Tanks / Main Battle Tanks">
+    <datalist id="categoryList"></datalist>
+    <p class="field-hint">Pick an existing category or type a new one. Separate the levels with “/”.</p>
+    <p id="categoryError" class="field-error" hidden></p>
+    <div class="modal-footer">
+      <button class="button-secondary" type="button" data-close>Cancel</button>
+      <button id="categorySave" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmMessage" class="modal-intro confirm-message"></p>
+    <div class="modal-footer">
+      <button id="confirmCancel" class="button-secondary" type="button" data-close>Cancel</button>
+      <button id="confirmOk" type="button">Continue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Single place to bump the version (also add an entry to the CHANGELOG at the top of the file).
+window.APP_VERSION = '2.9';
+document.querySelectorAll('.app-version').forEach(element => {
+  element.textContent = `v${window.APP_VERSION}`;
+});
+document.querySelectorAll('.app-version-number').forEach(element => {
+  element.textContent = window.APP_VERSION;
+});
+window.GALLERY_CARD_DEFAULT_WIDTH = 260;
+window.MODAL_FIT_TO_WINDOW_DEFAULT = false;
+
+// Maximum size of the files of the data folder (base64 included), in MB.
+window.COVERS_FILE_MAX_MB = 10;   // gc_covers-NN.js: first image of each folder, loaded while scrolling
+window.IMAGES_FILE_MAX_MB = 70;   // gc_images-NN.js: other images, loaded when a folder is browsed
+// Above this size, the standalone export asks for a confirmation.
+window.STANDALONE_WARNING_MB = 50;
+
+(() => {
+  // Taken before anything is rendered: base of the standalone export.
+  const templateHtml = buildTemplateHtml();
+
+  const input = document.getElementById('folderInput');
+  const gallery = document.getElementById('gallery');
+  const summary = document.getElementById('summary');
+  const search = document.getElementById('search');
+  const filtersContainer = document.getElementById('filters');
+  const filterSummary = document.getElementById('filterSummary');
+  const specificationFilters = document.getElementById('specificationFilters');
+  const specificationCriteria = document.getElementById('specificationCriteria');
+  const specificationSelect = document.getElementById('specificationSelect');
+  const specificationPicker = document.getElementById('specificationPicker');
+  const specificationNote = document.getElementById('specificationNote');
+  const specificationSummary = document.getElementById('specSummary');
+
+  const viewer = document.getElementById('viewer');
+  const viewerStage = document.getElementById('viewerStage');
+  const viewerImg = viewerStage.querySelector('img');
+  const viewerMeta = document.getElementById('viewerMeta');
+  const viewerFilename = document.getElementById('viewerFilename');
+  const viewerCounter = document.getElementById('viewerCounter');
+  const viewerFit = document.getElementById('viewerFit');
+  const viewerPrev = document.getElementById('viewerPrev');
+  const viewerNext = document.getElementById('viewerNext');
+  const viewerSpecifications = document.getElementById('viewerSpecifications');
+  const viewerSpecificationsToggle = document.getElementById('viewerSpecificationsToggle');
+  const viewerSpecificationsContent = document.getElementById('viewerSpecificationsContent');
+  const viewerSpecificationsEdit = document.getElementById('viewerSpecificationsEdit');
+  const viewerAddSpecifications = document.getElementById('viewerAddSpecifications');
+  const viewerThumbs = document.getElementById('viewerThumbs');
+
+  const saveStatus = document.getElementById('saveStatus');
+
+  const imageExt = /\.(avif|bmp|gif|jpe?g|png|svg|webp|tiff?)$/i;
+  const toggleCards = document.getElementById('toggleCards');
+  const scaleDown = document.getElementById('scaleDown');
+  const scaleUp = document.getElementById('scaleUp');
+  const scaleValue = document.getElementById('scaleValue');
+
+  let galleryCardWidth = Number(window.GALLERY_CARD_DEFAULT_WIDTH) || 320;
+
+  function applyGalleryCardWidth() {
+    document.documentElement.style.setProperty('--gallery-card-min-width', `${galleryCardWidth}px`);
+    scaleValue.textContent = `${galleryCardWidth} px`;
+    scaleDown.disabled = galleryCardWidth <= 260;
+    scaleUp.disabled = galleryCardWidth >= 560;
+  }
+  scaleDown.addEventListener('click', () => {
+    galleryCardWidth = Math.max(260, galleryCardWidth - 40);
+    applyGalleryCardWidth();
+  });
+  scaleUp.addEventListener('click', () => {
+    galleryCardWidth = Math.min(560, galleryCardWidth + 40);
+    applyGalleryCardWidth();
+  });
+  applyGalleryCardWidth();
+
+  let groups = [];
+  let objectUrls = [];
+  let viewerGroup = null;
+  let viewerIndex = 0;
+
+  // localStorage may be unavailable in private or restricted browsing contexts.
+  // The key is versioned: a value saved by an earlier version must not override the default.
+  const FIT_MODE_KEY = 'galleryFitModeV2';
+  let savedFitMode = null;
+  try {
+    savedFitMode = localStorage.getItem(FIT_MODE_KEY);
+  } catch (error) {
+    console.warn('Could not read the fit mode from localStorage:', error);
+  }
+
+  // State of the "Hide / Show specifications" button in the preview modal (expanded by default).
+  // Versioned key: a choice saved by an earlier version must not hide the panel by default.
+  const SPECIFICATIONS_COLLAPSED_KEY = 'gallerySpecificationsCollapsedV2';
+  let specificationsCollapsed = false;
+  try {
+    specificationsCollapsed = localStorage.getItem(SPECIFICATIONS_COLLAPSED_KEY) === 'true';
+  } catch (error) {
+    console.warn('Could not read the specifications state from localStorage:', error);
+  }
+
+  let fitMode = savedFitMode === null
+    ? Boolean(window.MODAL_FIT_TO_WINDOW_DEFAULT)
+    : savedFitMode === 'true';
+
+  let selections = [];
+  let maxDepth = 0;
+  let cardsHidden = false;
+
+  // Numerical specification search state.
+  const DEFAULT_SPEC_PATHS = [
+    'dimensions.length',
+    'dimensions.width',
+    'dimensions.height'
+  ];
+  let availableSpecifications = new Map();
+  let activeSpecificationPaths = new Set();
+  let specificationValues = {};
+
+  toggleCards.addEventListener('click', () => {
+    cardsHidden = !cardsHidden;
+    filtersContainer.hidden = cardsHidden;
+    document.body.classList.toggle('filters-hidden', cardsHidden);
+    toggleCards.textContent = cardsHidden ? 'Show filters' : 'Hide filters';
+  });
+
+  /* ----------------------------------------
+     SPECIFICATION DATA HELPERS
+  ---------------------------------------- */
+
+  function getFolderKey(relativePath) {
+    const parts = String(relativePath || '').split('/').filter(Boolean);
+    const folderParts = parts.slice(1, -1);
+    return folderParts.join('/') || '__root__';
+  }
+
+  function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  // ODIN format: a list of { name, value, units? } objects, e.g.
+  //   "dimensions": [{ "name": "Length", "value": "7.85", "units": "m" }, ...]
+  // Each entry becomes a searchable property "<list>.<camelCasedName>" (dimensions.length).
+  function isPropertyList(value) {
+    return Array.isArray(value) && value.length > 0 && value.every(item =>
+      isPlainObject(item) && typeof item.name === 'string' && 'value' in item
+    );
+  }
+
+  function propertyKeyFromName(name) {
+    return String(name)
+      .replace(/[^A-Za-z0-9]+/g, ' ')
+      .trim()
+      .split(' ')
+      .filter(Boolean)
+      .map((word, index) => index === 0
+        ? word.toLowerCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join('');
+  }
+
+  // A lone number with an optional unit: "7.85", "25 cm", "1,775", "6.53.".
+  // Ranges ("420–850 mm"), "INA" and free text are deliberately not searchable.
+  const NUMBER_WITH_UNIT =
+    /^(-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?)\s*([A-Za-z]{1,6})?\s*[.,;]?$/;
+
+  function parseNumericString(raw) {
+    if (typeof raw === 'number') {
+      return Number.isFinite(raw) ? { value: raw, unit: '' } : null;
+    }
+    if (typeof raw !== 'string') return null;
+
+    const match = NUMBER_WITH_UNIT.exec(raw.trim());
+    if (!match) return null;
+
+    const number = Number(match[1].replace(/,/g, ''));
+    return Number.isFinite(number) ? { value: number, unit: match[2] || '' } : null;
+  }
+
+  // Searches on lengths are done in metres.
+  const LENGTH_TO_METRES = {
+    m: 1, meter: 1, meters: 1, metre: 1, metres: 1,
+    km: 1000,
+    cm: 0.01,
+    mm: 0.001,
+    in: 0.0254, inch: 0.0254, inches: 0.0254,
+    ft: 0.3048, foot: 0.3048, feet: 0.3048,
+    yd: 0.9144, yard: 0.9144, yards: 0.9144
+  };
+
+  // Properties that are lengths: without a known length unit they are not searchable
+  // (the unit is never guessed).
+  const LENGTH_KEYS = new Set([
+    'length', 'width', 'height', 'diameter', 'wingspan', 'beam', 'draft', 'draught',
+    'depth', 'span', 'radius'
+  ]);
+
+  function lengthFactor(unit) {
+    const key = String(unit || '').trim().toLowerCase().replace(/\.$/, '');
+    return Object.prototype.hasOwnProperty.call(LENGTH_TO_METRES, key) ? LENGTH_TO_METRES[key] : null;
+  }
+
+  function normaliseNumber(key, value, unit) {
+    const factor = lengthFactor(unit);
+    if (factor !== null) {
+      return { value: Math.round(value * factor * 1e6) / 1e6, unit: 'm' };
+    }
+    if (LENGTH_KEYS.has(key)) return null;
+    return { value, unit: unit || '' };
+  }
+
+  function getNumericValues(value, prefix = '', inheritedUnit = null, output = new Map()) {
+    if (isPropertyList(value)) {
+      value.forEach(item => {
+        const key = propertyKeyFromName(item.name);
+        if (!key) return;
+
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (output.has(path)) return; // keep the first of two entries with the same name
+
+        const parsed = parseNumericString(item.value);
+        if (!parsed) return;
+
+        // The unit written next to the number wins over the `units` field.
+        const unit = parsed.unit || String(item.units ?? item.unit ?? '').trim() || inheritedUnit || '';
+        const normalised = normaliseNumber(key, parsed.value, unit);
+        if (normalised) output.set(path, normalised);
+      });
+      return output;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        getNumericValues(item, `${prefix}[${index}]`, inheritedUnit, output);
+      });
+      return output;
+    }
+
+    if (!isPlainObject(value)) return output;
+
+    const ownUnit = typeof value.unit === 'string' && value.unit.trim()
+      ? value.unit.trim()
+      : inheritedUnit;
+
+    Object.entries(value).forEach(([key, child]) => {
+      if (key === 'unit') return;
+
+      const path = prefix ? `${prefix}.${key}` : key;
+
+      if (typeof child === 'number' && Number.isFinite(child)) {
+        const factor = lengthFactor(ownUnit);
+        output.set(path, factor === null
+          ? { value: child, unit: ownUnit || '' }
+          : { value: Math.round(child * factor * 1e6) / 1e6, unit: 'm' });
+      } else if (child !== null && typeof child === 'object') {
+        getNumericValues(child, path, ownUnit, output);
+      }
+    });
+
+    return output;
+  }
+
+  // path -> Set of units found, for the catalogue of searchable properties.
+  function collectNumericProperties(value) {
+    const output = new Map();
+    getNumericValues(value).forEach((entry, path) => output.set(path, new Set([entry.unit])));
+    return output;
+  }
+
+  // Parsed once per specification: filters run on every keystroke over thousands of folders.
+  const numericValuesCache = new WeakMap();
+
+  function getGroupNumericValues(group) {
+    const specification = group.specification;
+    if (!specification || !specification.data) return null;
+
+    if (!numericValuesCache.has(specification)) {
+      numericValuesCache.set(specification, getNumericValues(specification.data));
+    }
+    return numericValuesCache.get(specification);
+  }
+
+  // Country filters, read from `origin` and `proliferation` (lists of strings).
+  const COUNTRY_FIELDS = [
+    { key: 'origin', title: 'Origin country', placeholder: 'Origin country' },
+    { key: 'proliferation', title: 'User country', placeholder: 'User country' }
+  ];
+  let countryCatalog = { origin: [], proliferation: [] };
+  let countrySelection = { origin: new Set(), proliferation: new Set() };
+
+  function hasAnySpecification() {
+    return groups.some(group => group.specification && group.specification.data);
+  }
+
+  // preserve: keeps the criteria in progress that still exist (after a deletion or an edit).
+  function rebuildSpecificationCatalog(preserve = false) {
+    const hadCatalog = availableSpecifications.size > 0;
+    const previousPaths = activeSpecificationPaths;
+    const previousValues = specificationValues;
+    const previousCountries = countrySelection;
+
+    availableSpecifications = new Map();
+    const countries = { origin: new Set(), proliferation: new Set() };
+
+    groups.forEach(group => {
+      if (!group.specification || !group.specification.data) return;
+
+      const properties = collectNumericProperties(group.specification.data);
+
+      properties.forEach((units, path) => {
+        // unit -> number of folders using it (to name the main unit when they are mixed).
+        if (!availableSpecifications.has(path)) {
+          availableSpecifications.set(path, new Map());
+        }
+        const counts = availableSpecifications.get(path);
+        units.forEach(unit => counts.set(unit, (counts.get(unit) || 0) + 1));
+      });
+
+      COUNTRY_FIELDS.forEach(({ key }) => {
+        const values = group.specification.data[key];
+        if (Array.isArray(values)) {
+          values.forEach(value => {
+            if (typeof value === 'string' && value.trim()) countries[key].add(value);
+          });
+        }
+      });
+    });
+
+    countryCatalog = {
+      origin: Array.from(countries.origin).sort((a, b) => a.localeCompare(b, 'en')),
+      proliferation: Array.from(countries.proliferation).sort((a, b) => a.localeCompare(b, 'en'))
+    };
+
+    if (preserve && hadCatalog) {
+      countrySelection = {
+        origin: new Set(Array.from(previousCountries.origin)
+          .filter(value => countryCatalog.origin.includes(value))),
+        proliferation: new Set(Array.from(previousCountries.proliferation)
+          .filter(value => countryCatalog.proliferation.includes(value)))
+      };
+      activeSpecificationPaths = new Set(
+        Array.from(previousPaths).filter(path => availableSpecifications.has(path))
+      );
+      specificationValues = {};
+      activeSpecificationPaths.forEach(path => {
+        specificationValues[path] = previousValues[path] || { value: '', tolerance: '' };
+      });
+    } else {
+      countrySelection = { origin: new Set(), proliferation: new Set() };
+      activeSpecificationPaths = new Set(
+        DEFAULT_SPEC_PATHS.filter(path => availableSpecifications.has(path))
+      );
+      specificationValues = {};
+      activeSpecificationPaths.forEach(path => {
+        specificationValues[path] = { value: '', tolerance: '' };
+      });
+    }
+
+    renderSpecificationFilters();
+  }
+
+  function formatPropertyName(path) {
+    const segments = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+    return segments.map(segment =>
+      segment.replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/^./, character => character.toUpperCase())
+    ).join(' – ');
+  }
+
+  // "dimensions.length" -> "Length": the section name adds nothing here.
+  function propertyTitle(path) {
+    return formatPropertyName(path.replace(/^dimensions\./, ''));
+  }
+
+  // Unit shared by every folder ("m"), '' when none or when units differ.
+  function getPropertyUnit(path) {
+    const units = availableSpecifications.get(path) || new Map();
+    return units.size === 1 ? Array.from(units.keys())[0] : '';
+  }
+
+  // "(m)" when every folder uses the same unit, "(kg & mixed)" when several are found:
+  // the most frequent unit, then "mixed" (values are compared as stored).
+  function getPropertyUnitLabel(path) {
+    const units = availableSpecifications.get(path) || new Map();
+    if (units.size > 1) {
+      const main = Array.from(units.entries())
+        .filter(([unit]) => unit)
+        .sort((a, b) => b[1] - a[1])[0];
+      return main ? `(${main[0]} & mixed)` : '(mixed)';
+    }
+    const unit = getPropertyUnit(path);
+    return unit ? `(${unit})` : '';
+  }
+
+  function getPropertyOptionLabel(path) {
+    const unit = getPropertyUnitLabel(path);
+    return `${propertyTitle(path)}${unit ? ` ${unit}` : ''}`;
+  }
+
+  /* ---- Recap of the active technical criteria (under the category recap) */
+
+  function renderSpecificationSummary() {
+    const parts = [];
+
+    const makePart = (label, text) => {
+      const strong = document.createElement('strong');
+      strong.textContent = `${label}:`;
+      const wrapper = document.createElement('span');
+      wrapper.append(strong, document.createTextNode(` ${text}`));
+      return wrapper;
+    };
+
+    Array.from(activeSpecificationPaths).forEach(path => {
+      const criterion = specificationValues[path];
+      if (!criterion || criterion.value === '') return;
+
+      const unit = getPropertyUnit(path);
+      const tolerance = criterion.tolerance === '' ? '' : ` ± ${criterion.tolerance}`;
+      parts.push(makePart(
+        propertyTitle(path),
+        `${criterion.value}${tolerance}${unit ? ` ${unit}` : ''}`
+      ));
+    });
+
+    COUNTRY_FIELDS.forEach(({ key, title }) => {
+      const selected = Array.from(countrySelection[key]);
+      if (selected.length) parts.push(makePart(title, selected.join(', ')));
+    });
+
+    specificationSummary.replaceChildren();
+    parts.forEach((part, index) => {
+      if (index) specificationSummary.append(document.createTextNode('  ·  '));
+      specificationSummary.append(part);
+    });
+  }
+
+  /* ---- Country criteria */
+
+  function addCountry(key, raw) {
+    const wanted = String(raw || '').trim().toLowerCase();
+    if (!wanted) return false;
+
+    const found = countryCatalog[key].find(value => value.toLowerCase() === wanted);
+    if (!found || countrySelection[key].has(found)) return false;
+
+    countrySelection[key].add(found);
+    return true;
+  }
+
+  function renderCountryCriterion({ key, title, placeholder }) {
+    const block = document.createElement('div');
+    block.className = 'spec-country';
+
+    const label = document.createElement('div');
+    label.className = 'spec-criterion-label';
+    label.textContent = title;
+
+    const listId = `spec-list-${key}`;
+    const datalist = document.createElement('datalist');
+    datalist.id = listId;
+    countryCatalog[key].forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      datalist.append(option);
+    });
+
+    const field = document.createElement('input');
+    field.type = 'text';
+    field.setAttribute('list', listId);
+    field.placeholder = placeholder;
+    field.autocomplete = 'off';
+    field.setAttribute('aria-label', title);
+
+    const chips = document.createElement('div');
+    chips.className = 'spec-chips';
+
+    countrySelection[key].forEach(value => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'spec-chip';
+      chip.textContent = value;
+      chip.setAttribute('aria-label', `Remove ${value}`);
+      chip.addEventListener('click', () => {
+        countrySelection[key].delete(value);
+        renderSpecificationFilters();
+        renderGallery();
+      });
+      chips.append(chip);
+    });
+
+    const commit = () => {
+      if (!addCountry(key, field.value)) return;
+      renderSpecificationFilters(key);
+      renderGallery();
+    };
+
+    // Picking a suggestion fires `input` without an inputType; typing does not commit.
+    field.addEventListener('input', event => {
+      if (!event.inputType || event.inputType === 'insertReplacementText') commit();
+    });
+    field.addEventListener('change', commit);
+    field.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        commit();
+      }
+    });
+
+    block.append(label, field, datalist, chips);
+    return { block, field };
+  }
+
+  function renderSpecificationFilters(focusCountryKey = null) {
+    specificationCriteria.replaceChildren();
+
+    if (!groups.length || !hasAnySpecification()) {
+      specificationFilters.hidden = true;
+      renderSpecificationSummary();
+      return;
+    }
+
+    specificationFilters.hidden = false;
+
+    Array.from(activeSpecificationPaths).forEach(path => {
+      const row = document.createElement('div');
+      row.className = 'spec-criterion';
+
+      const title = propertyTitle(path);
+      const unitText = getPropertyUnitLabel(path);
+
+      const label = document.createElement('div');
+      label.className = 'spec-criterion-label';
+      label.textContent = title;
+      if (unitText) {
+        const unit = document.createElement('small');
+        unit.textContent = unitText;
+        label.append(unit);
+      }
+
+      const valueInput = document.createElement('input');
+      valueInput.type = 'number';
+      valueInput.step = 'any';
+      valueInput.placeholder = title;
+      valueInput.setAttribute('aria-label', `${path} target value`);
+      valueInput.value = specificationValues[path]?.value ?? '';
+
+      const toleranceInput = document.createElement('input');
+      toleranceInput.type = 'number';
+      toleranceInput.step = 'any';
+      toleranceInput.min = '0';
+      toleranceInput.placeholder = 'Tolerance ±';
+      toleranceInput.setAttribute('aria-label', `${path} tolerance`);
+      toleranceInput.value = specificationValues[path]?.tolerance ?? '';
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'spec-remove';
+      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', `Remove ${path} search criterion`);
+
+      valueInput.addEventListener('input', () => {
+        specificationValues[path].value = valueInput.value;
+        renderSpecificationSummary();
+        renderGallery();
+      });
+
+      toleranceInput.addEventListener('input', () => {
+        specificationValues[path].tolerance = toleranceInput.value;
+        renderSpecificationSummary();
+        renderGallery();
+      });
+
+      remove.addEventListener('click', () => {
+        activeSpecificationPaths.delete(path);
+        delete specificationValues[path];
+        renderSpecificationFilters();
+        renderGallery();
+      });
+
+      row.append(label, valueInput, toleranceInput, remove);
+      specificationCriteria.append(row);
+    });
+
+    COUNTRY_FIELDS.forEach(field => {
+      if (countryCatalog[field.key].length === 0) return;
+
+      const { block, field: input } = renderCountryCriterion(field);
+      specificationCriteria.append(block);
+      if (focusCountryKey === field.key) input.focus();
+    });
+
+    const optionalPaths = Array.from(availableSpecifications.keys())
+      .filter(path => !activeSpecificationPaths.has(path));
+
+    document.getElementById('addSpecification').hidden = optionalPaths.length === 0;
+
+    const mixed = Array.from(availableSpecifications.values()).some(units => units.size > 1);
+    specificationNote.textContent =
+      'Lengths are compared in metres (mm, cm, km, in, ft and yd are converted); the specification ' +
+      'in the viewer keeps the original text. Leave a target empty to ignore it; an empty tolerance ' +
+      'means an exact match. Several countries in one field match any of them.' +
+      (mixed ? ' Some properties use different units in different folders and are compared as stored.' : '');
+
+    renderSpecificationSummary();
+  }
+
+  function openSpecificationPicker() {
+    const optionalPaths = Array.from(availableSpecifications.keys())
+      .filter(path => !activeSpecificationPaths.has(path))
+      .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+
+    specificationSelect.replaceChildren();
+
+    optionalPaths.forEach(path => {
+      const option = document.createElement('option');
+      option.value = path;
+      option.textContent = getPropertyOptionLabel(path);
+      specificationSelect.append(option);
+    });
+
+    specificationPicker.hidden = optionalPaths.length === 0;
+    if (optionalPaths.length) specificationSelect.focus();
+  }
+
+  document.getElementById('addSpecification').addEventListener('click', () => {
+    openSpecificationPicker();
+  });
+
+  document.getElementById('confirmSpecification').addEventListener('click', () => {
+    const path = specificationSelect.value;
+    if (!path || activeSpecificationPaths.has(path)) return;
+
+    activeSpecificationPaths.add(path);
+    specificationValues[path] = { value: '', tolerance: '' };
+    specificationPicker.hidden = true;
+    renderSpecificationFilters();
+    renderGallery();
+  });
+
+  document.getElementById('cancelSpecification').addEventListener('click', () => {
+    specificationPicker.hidden = true;
+  });
+
+  document.getElementById('clearSpecifications').addEventListener('click', () => {
+    activeSpecificationPaths.forEach(path => {
+      specificationValues[path] = { value: '', tolerance: '' };
+    });
+    countrySelection = { origin: new Set(), proliferation: new Set() };
+    renderSpecificationFilters();
+    renderGallery();
+  });
+
+  function matchesCountryFilters(group) {
+    for (const { key } of COUNTRY_FIELDS) {
+      const wanted = countrySelection[key];
+      if (wanted.size === 0) continue;
+
+      const values = group.specification?.data?.[key];
+      if (!Array.isArray(values) || !values.some(value => wanted.has(value))) return false;
+    }
+    return true;
+  }
+
+  function matchesSpecificationFilters(group) {
+    if (!matchesCountryFilters(group)) return false;
+
+    const activePaths = Array.from(activeSpecificationPaths);
+
+    for (const path of activePaths) {
+      const criterion = specificationValues[path];
+      if (!criterion || criterion.value === '') continue;
+
+      const target = Number(criterion.value);
+      const tolerance = criterion.tolerance === '' ? 0 : Number(criterion.tolerance);
+
+      if (!Number.isFinite(target) || !Number.isFinite(tolerance) || tolerance < 0) {
+        return false;
+      }
+
+      const values = getGroupNumericValues(group);
+      if (!values) return false;
+
+      const property = values.get(path);
+
+      if (!property) return false;
+
+      if (Math.abs(property.value - target) > tolerance) return false;
+    }
+
+    return true;
+  }
+
+  /* ----------------------------------------
+     SPECIFICATION DISPLAY IN VIEWER
+  ---------------------------------------- */
+
+  function countSpecificationLeaves(value) {
+    if (Array.isArray(value)) {
+      return value.reduce((sum, item) => sum + countSpecificationLeaves(item), 0);
+    }
+    if (isPlainObject(value)) {
+      return Object.entries(value)
+        .filter(([key]) => key !== 'unit')
+        .reduce((sum, [, child]) => sum + countSpecificationLeaves(child), 0);
+    }
+    return 1;
+  }
+
+  function formatSpecValue(value, unit) {
+    if (value === null) return 'null';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') {
+      return `${value}${unit ? ` ${unit}` : ''}`;
+    }
+    if (typeof value === 'string') return value;
+    return String(value);
+  }
+
+  function appendSpecRow(container, label, value, unit) {
+    const row = document.createElement('div');
+    row.className = 'spec-tree-row';
+
+    const name = document.createElement('span');
+    name.textContent = label;
+
+    const content = document.createElement('strong');
+    const text = formatSpecValue(value, typeof value === 'number' ? unit : '');
+
+    if (typeof value === 'string' && /^https?:\/\/\S+$/i.test(value.trim())) {
+      const link = document.createElement('a');
+      link.href = value.trim();
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = text;
+      content.append(link);
+    } else {
+      content.textContent = text;
+    }
+
+    row.append(name, content);
+    container.append(row);
+  }
+
+  function formatPropertyEntry(item) {
+    const text = String(item.value ?? '').trim();
+    const units = String(item.units ?? item.unit ?? '').trim();
+    return units ? `${text} ${units}` : text;
+  }
+
+  function prettyKey(key) {
+    return String(key)
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^./, character => character.toUpperCase());
+  }
+
+  function renderSpecificationNode(container, label, value, inheritedUnit = null) {
+    // Nothing to show for an empty list (e.g. no alternate designation).
+    if (Array.isArray(value) && value.length === 0) return;
+
+    // List of strings: one row, comma separated.
+    if (Array.isArray(value) && value.every(item => typeof item === 'string')) {
+      appendSpecRow(container, label, value.join(', '), null);
+      return;
+    }
+
+    // ODIN { name, value, units } list: one row per entry.
+    if (isPropertyList(value)) {
+      const group = document.createElement('div');
+      group.className = 'spec-tree-group';
+
+      const heading = document.createElement('div');
+      heading.className = 'spec-tree-heading';
+      heading.textContent = label;
+      group.append(heading);
+
+      value.forEach(item => appendSpecRow(group, item.name.trim(), formatPropertyEntry(item), null));
+
+      container.append(group);
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      const group = document.createElement('div');
+      group.className = 'spec-tree-group';
+
+      const heading = document.createElement('div');
+      heading.className = 'spec-tree-heading';
+      heading.textContent = label;
+      group.append(heading);
+
+      value.forEach((item, index) => {
+        renderSpecificationNode(group, `[${index}]`, item, inheritedUnit);
+      });
+
+      container.append(group);
+      return;
+    }
+
+    if (isPlainObject(value)) {
+      const group = document.createElement('div');
+      group.className = 'spec-tree-group';
+
+      const heading = document.createElement('div');
+      heading.className = 'spec-tree-heading';
+      heading.textContent = label;
+      group.append(heading);
+
+      const ownUnit = typeof value.unit === 'string' && value.unit.trim()
+        ? value.unit.trim()
+        : inheritedUnit;
+
+      const entries = Object.entries(value).filter(([key]) => key !== 'unit');
+
+      if (entries.length === 0 && Object.prototype.hasOwnProperty.call(value, 'unit')) {
+        appendSpecRow(group, 'Unit', value.unit, null);
+      } else {
+        entries.forEach(([key, child]) => {
+          renderSpecificationNode(group, key, child, ownUnit);
+        });
+      }
+
+      container.append(group);
+      return;
+    }
+
+    appendSpecRow(container, label, value, inheritedUnit);
+  }
+
+  // Read-only view of a specification.
+  function renderSpecificationReadView(container, specification) {
+    if (!specification) {
+      const empty = document.createElement('p');
+      empty.className = 'spec-empty';
+      empty.textContent = 'No specifications for this folder.';
+      container.append(empty);
+      return;
+    }
+
+    if (specification.error || !specification.data || !isPlainObject(specification.data)) {
+      const error = document.createElement('div');
+      error.className = 'spec-error';
+      error.textContent = specification.error
+        ? `Could not read specifications.json: ${specification.error}`
+        : 'The specifications file does not contain a valid JSON object.';
+      container.append(error);
+      return;
+    }
+
+    const entries = Object.entries(specification.data);
+    if (!entries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'spec-empty';
+      empty.textContent = 'The specifications are empty.';
+      container.append(empty);
+      return;
+    }
+
+    entries.forEach(([key, value]) => {
+      renderSpecificationNode(container, prettyKey(key), value);
+    });
+  }
+
+  // Panel on the right of the viewer: read view, or editor in edit mode.
+  function renderViewerPanel(focusSelector = null) {
+    const specification = viewerGroup?.specification || null;
+    // No panel for a folder without specifications, even in edit mode
+    // (there, "Add specifications" in the top bar opens the editor).
+    const showPanel = Boolean(viewerGroup) && (Boolean(specification) || Boolean(specEditor));
+
+    viewerAddSpecifications.hidden =
+      !viewerGroup || !editMode || Boolean(specification) || Boolean(specEditor);
+
+    viewer.classList.toggle('has-panel', showPanel);
+    viewer.classList.toggle('specs-collapsed', showPanel && specificationsCollapsed && !specEditor);
+    viewerSpecifications.hidden = !showPanel;
+    viewerSpecificationsToggle.hidden = !showPanel || Boolean(specEditor);
+    viewerSpecificationsToggle.textContent = specificationsCollapsed
+      ? 'Show specifications'
+      : 'Hide specifications';
+
+    viewerSpecificationsEdit.hidden = !showPanel || !editMode || Boolean(specEditor);
+    viewerSpecificationsEdit.textContent = specification && specification.data
+      ? 'Edit'
+      : 'Replace specifications';
+
+    viewerSpecificationsContent.replaceChildren();
+    if (!showPanel) return;
+
+    if (specEditor) {
+      renderSpecificationEditor(viewerSpecificationsContent);
+      if (focusSelector) {
+        const target = viewerSpecificationsContent.querySelector(focusSelector);
+        if (target) target.focus();
+      }
+    } else {
+      renderSpecificationReadView(viewerSpecificationsContent, specification);
+    }
+  }
+
+  // Expanded by default; the last choice is kept from one folder to the next and between visits.
+  viewerSpecificationsToggle.addEventListener('click', () => {
+    specificationsCollapsed = !specificationsCollapsed;
+
+    try {
+      localStorage.setItem(SPECIFICATIONS_COLLAPSED_KEY, String(specificationsCollapsed));
+    } catch (error) {
+      console.warn('Could not save the specifications state to localStorage:', error);
+    }
+
+    renderViewerPanel();
+  });
+
+  viewerSpecificationsEdit.addEventListener('click', () => startSpecificationEditor());
+  viewerAddSpecifications.addEventListener('click', () => startSpecificationEditor());
+
+  /* ----------------------------------------
+     SPECIFICATION EDITOR (edit mode)
+     The changes stay in the gallery (data/gc_specifications.js after saving):
+     the specifications.json of the source folder is never modified.
+  ---------------------------------------- */
+
+  const EDITOR_SECTIONS = [
+    { key: 'dimensions', title: 'Dimensions', type: 'properties' },
+    { key: 'origin', title: 'Origin country', type: 'list', catalog: 'origin', placeholder: 'Add a country' },
+    { key: 'proliferation', title: 'User country', type: 'list', catalog: 'proliferation', placeholder: 'Add a country' },
+    { key: 'alternateDesignations', title: 'Alternate designations', type: 'list', placeholder: 'Add a designation' },
+    { key: 'odinUrl', title: 'ODIN link', type: 'text', placeholder: 'https://…' }
+  ];
+
+  // Order of the sections in a new specification (same as the ODIN export).
+  const SECTION_ORDER = ['alternateDesignations', 'origin', 'proliferation', 'dimensions', 'odinUrl'];
+
+  const PREDEFINED_DIMENSIONS = [
+    { name: 'Length', units: 'm' },
+    { name: 'Width', units: 'm' },
+    { name: 'Height', units: 'm' },
+    { name: 'Weight', units: 'kg' },
+    { name: 'Weight, Combat', units: 'kg' },
+    { name: 'Wingspan', units: 'm' },
+    { name: 'Diameter', units: 'mm' },
+    { name: 'Beam', units: 'm' },
+    { name: 'Draft', units: 'm' }
+  ];
+
+  let specEditor = null; // { draft, dirty, error }
+
+  function isEditableSection(section, value) {
+    if (section.type === 'properties') {
+      return Array.isArray(value) && (value.length === 0 || isPropertyList(value));
+    }
+    if (section.type === 'list') {
+      return Array.isArray(value) && value.every(item => typeof item === 'string');
+    }
+    return typeof value === 'string';
+  }
+
+  function startSpecificationEditor() {
+    if (!viewerGroup || !editMode) return;
+    const specification = viewerGroup.specification;
+    const draft = specification && specification.data
+      ? JSON.parse(JSON.stringify(specification.data))
+      : {};
+    specEditor = { draft, dirty: false, error: '' };
+    renderViewerPanel();
+  }
+
+  function markDraftChanged() {
+    if (specEditor) specEditor.dirty = true;
+  }
+
+  async function confirmDiscardDraft() {
+    if (!specEditor || !specEditor.dirty) return true;
+    return confirmDialog({
+      title: 'Discard the changes?',
+      message: 'The changes made to these specifications will be lost.',
+      confirmLabel: 'Discard',
+      danger: true
+    });
+  }
+
+  async function cancelSpecificationEditor() {
+    if (!(await confirmDiscardDraft())) return;
+    specEditor = null;
+    renderViewerPanel();
+  }
+
+  function editorButton(text, className, onClick) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = text;
+    if (className) button.className = className;
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  function editorInput(value, placeholder, focusId, onInput) {
+    const field = document.createElement('input');
+    field.type = 'text';
+    field.value = value;
+    field.placeholder = placeholder;
+    field.setAttribute('aria-label', placeholder);
+    if (focusId) field.dataset.focus = focusId;
+    field.addEventListener('input', () => {
+      onInput(field.value);
+      markDraftChanged();
+    });
+    return field;
+  }
+
+  function normalisedName(name) {
+    return String(name || '').trim().toLowerCase();
+  }
+
+  function renderPropertiesSection(body, section, rows) {
+    const list = document.createElement('div');
+    list.className = 'spec-edit-rows';
+
+    rows.forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'spec-edit-row';
+
+      const name = editorInput(String(entry.name ?? ''), 'Name', `${section.key}-${index}-name`,
+        value => { entry.name = value; });
+      const value = editorInput(String(entry.value ?? ''), 'Value', `${section.key}-${index}-value`,
+        text => { entry.value = text; });
+      const units = editorInput(String(entry.units ?? entry.unit ?? ''), 'Unit', null,
+        text => { entry.units = text; delete entry.unit; });
+
+      const remove = editorButton('×', 'spec-edit-remove', () => {
+        rows.splice(index, 1);
+        markDraftChanged();
+        renderViewerPanel();
+      });
+      remove.setAttribute('aria-label', `Remove ${entry.name || 'this line'}`);
+
+      row.append(name, value, units, remove);
+      list.append(row);
+    });
+
+    body.append(list);
+
+    // Predefined entries, offered only when missing.
+    const adds = document.createElement('div');
+    adds.className = 'spec-edit-adds';
+    const present = new Set(rows.map(entry => normalisedName(entry.name)));
+
+    PREDEFINED_DIMENSIONS
+      .filter(predefined => !present.has(normalisedName(predefined.name)))
+      .forEach(predefined => {
+        adds.append(editorButton(`+ ${predefined.name}`, 'spec-edit-add', () => {
+          rows.push({ name: predefined.name, value: '', units: predefined.units });
+          markDraftChanged();
+          renderViewerPanel(`[data-focus="${section.key}-${rows.length - 1}-value"]`);
+        }));
+      });
+
+    adds.append(editorButton('+ Custom field', 'spec-edit-add', () => {
+      rows.push({ name: '', value: '', units: '' });
+      markDraftChanged();
+      renderViewerPanel(`[data-focus="${section.key}-${rows.length - 1}-name"]`);
+    }));
+
+    body.append(adds);
+  }
+
+  function renderListSection(body, section, values) {
+    const chips = document.createElement('div');
+    chips.className = 'spec-edit-chips';
+
+    values.forEach((value, index) => {
+      const chip = editorButton(value, 'spec-edit-chip', () => {
+        values.splice(index, 1);
+        markDraftChanged();
+        renderViewerPanel(`[data-focus="${section.key}-new"]`);
+      });
+      chip.setAttribute('aria-label', `Remove ${value}`);
+      chips.append(chip);
+    });
+
+    const line = document.createElement('div');
+    line.className = 'spec-edit-line';
+
+    const field = document.createElement('input');
+    field.type = 'text';
+    field.placeholder = section.placeholder;
+    field.autocomplete = 'off';
+    field.dataset.focus = `${section.key}-new`;
+    field.setAttribute('aria-label', section.placeholder);
+
+    if (section.catalog && countryCatalog[section.catalog].length) {
+      const listId = `editor-list-${section.key}`;
+      const datalist = document.createElement('datalist');
+      datalist.id = listId;
+      countryCatalog[section.catalog].forEach(country => {
+        const option = document.createElement('option');
+        option.value = country;
+        datalist.append(option);
+      });
+      field.setAttribute('list', listId);
+      line.append(datalist);
+    }
+
+    const add = () => {
+      const value = field.value.trim();
+      if (!value) return;
+      if (!values.some(existing => existing.toLowerCase() === value.toLowerCase())) {
+        values.push(value);
+        markDraftChanged();
+      }
+      renderViewerPanel(`[data-focus="${section.key}-new"]`);
+    };
+
+    field.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        add();
+      }
+    });
+
+    line.append(field, editorButton('Add', null, add));
+    body.append(chips, line);
+  }
+
+  function renderSpecificationEditor(container) {
+    const draft = specEditor.draft;
+    const form = document.createElement('div');
+    form.className = 'spec-editor';
+
+    const keys = Object.keys(draft);
+
+    keys.forEach(key => {
+      const section = EDITOR_SECTIONS.find(candidate => candidate.key === key);
+      if (!section || !isEditableSection(section, draft[key])) return;
+
+      const block = document.createElement('div');
+      block.className = 'spec-edit-section';
+
+      const head = document.createElement('div');
+      head.className = 'spec-edit-head';
+      const title = document.createElement('strong');
+      title.textContent = section.title;
+      head.append(title, editorButton('Remove section', 'spec-edit-remove', () => {
+        delete draft[key];
+        markDraftChanged();
+        renderViewerPanel();
+      }));
+      block.append(head);
+
+      if (section.type === 'properties') {
+        renderPropertiesSection(block, section, draft[key]);
+      } else if (section.type === 'list') {
+        renderListSection(block, section, draft[key]);
+      } else {
+        block.append(editorInput(draft[key], section.placeholder, section.key, value => {
+          draft[key] = value;
+        }));
+      }
+
+      form.append(block);
+    });
+
+    const others = keys.filter(key => {
+      const section = EDITOR_SECTIONS.find(candidate => candidate.key === key);
+      return !section || !isEditableSection(section, draft[key]);
+    });
+    if (others.length) {
+      const note = document.createElement('p');
+      note.className = 'spec-edit-note';
+      note.textContent = `Kept unchanged: ${others.map(prettyKey).join(', ')}.`;
+      form.append(note);
+    }
+
+    // Missing sections.
+    const missing = EDITOR_SECTIONS.filter(section => !(section.key in draft));
+    if (missing.length) {
+      const block = document.createElement('div');
+      block.className = 'spec-edit-section';
+      const head = document.createElement('div');
+      head.className = 'spec-edit-head';
+      const title = document.createElement('strong');
+      title.textContent = 'Add a section';
+      head.append(title);
+
+      const adds = document.createElement('div');
+      adds.className = 'spec-edit-adds';
+      missing.forEach(section => {
+        adds.append(editorButton(`+ ${section.title}`, 'spec-edit-add', () => {
+          draft[section.key] = section.type === 'text' ? '' : [];
+          markDraftChanged();
+          const focus = section.type === 'properties' ? null : `[data-focus="${section.key}${section.type === 'list' ? '-new' : ''}"]`;
+          renderViewerPanel(focus);
+        }));
+      });
+
+      block.append(head, adds);
+      form.append(block);
+    }
+
+    if (specEditor.error) {
+      const error = document.createElement('p');
+      error.className = 'spec-edit-error';
+      error.textContent = specEditor.error;
+      form.append(error);
+    }
+
+    const footer = document.createElement('div');
+    footer.className = 'spec-edit-footer';
+    footer.append(
+      editorButton('Cancel', null, () => cancelSpecificationEditor()),
+      editorButton('Save specifications', 'spec-edit-save', () => saveSpecificationEditor())
+    );
+    form.append(footer);
+
+    container.append(form);
+  }
+
+  function hasActiveSpecificationCriteria() {
+    const numeric = Array.from(activeSpecificationPaths).some(path =>
+      specificationValues[path] && specificationValues[path].value !== ''
+    );
+    return numeric || COUNTRY_FIELDS.some(({ key }) => countrySelection[key].size > 0);
+  }
+
+  function saveSpecificationEditor() {
+    if (!specEditor || !viewerGroup) return;
+    const draft = specEditor.draft;
+    specEditor.error = '';
+
+    // Dimensions: empty lines are dropped, a value needs a name.
+    if (Array.isArray(draft.dimensions) && isEditableSection(EDITOR_SECTIONS[0], draft.dimensions)) {
+      const rows = [];
+      for (const entry of draft.dimensions) {
+        const name = String(entry.name ?? '').trim();
+        const value = String(entry.value ?? '').trim();
+        const units = String(entry.units ?? entry.unit ?? '').trim();
+        if (!name && !value) continue;
+        if (!name) {
+          specEditor.error = 'Each dimension needs a name.';
+          renderViewerPanel();
+          return;
+        }
+        const row = { name, value };
+        if (units) row.units = units;
+        rows.push(row);
+      }
+      draft.dimensions = rows;
+    }
+    if (typeof draft.odinUrl === 'string') draft.odinUrl = draft.odinUrl.trim();
+
+    // The original key order is kept; new sections follow the usual order.
+    const previous = viewerGroup.specification;
+    const originalKeys = previous && previous.data ? Object.keys(previous.data) : [];
+    const orderedKeys = [
+      ...originalKeys.filter(key => key in draft),
+      ...SECTION_ORDER.filter(key => key in draft && !originalKeys.includes(key)),
+      ...Object.keys(draft).filter(key => !originalKeys.includes(key) && !SECTION_ORDER.includes(key))
+    ];
+    const data = {};
+    orderedKeys.forEach(key => { data[key] = draft[key]; });
+
+    viewerGroup.specification = orderedKeys.length
+      ? {
+          relativePath: previous?.relativePath || `${viewerGroup.key}/specifications.json`,
+          rawText: JSON.stringify(data, null, 2),
+          data,
+          error: null
+        }
+      : null;
+
+    specEditor = null;
+    markChanged();
+    rebuildSpecificationCatalog(true);
+    updateSummary();
+    if (hasActiveSpecificationCriteria()) renderGallery();
+    renderViewerPanel();
+    saveStatus.textContent = `Specifications of “${viewerGroup.title}” updated.`;
+  }
+
+  /* ----------------------------------------
+     IMAGE VIEWER
+  ---------------------------------------- */
+
+  function renderViewerThumbs() {
+    viewerThumbs.replaceChildren();
+    const files = viewerGroup ? viewerGroup.files : [];
+    // In edit mode the strip is always shown: it ends with the "+" tile to add images.
+    const showStrip = files.length > 1 || (editMode && Boolean(viewerGroup));
+    viewerThumbs.hidden = !showStrip;
+    if (!showStrip) return;
+
+    files.forEach((item, index) => {
+      const thumb = document.createElement('button');
+      thumb.type = 'button';
+      thumb.className = 'viewer-thumb';
+      thumb.title = item.name;
+      thumb.setAttribute('aria-label', `Image ${index + 1}: ${item.name}`);
+
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      thumb.append(img);
+      showImage(img, thumb, item);
+
+      thumb.addEventListener('click', () => {
+        viewerIndex = index;
+        updateViewer();
+      });
+      viewerThumbs.append(thumb);
+    });
+
+    if (editMode) {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'viewer-thumb viewer-thumb-add';
+      add.textContent = '+';
+      add.title = 'Add images to this folder';
+      add.setAttribute('aria-label', 'Add images to this folder');
+      add.addEventListener('click', addImagesToViewerGroup);
+      viewerThumbs.append(add);
+    }
+  }
+
+  function updateViewer() {
+    if (!viewerGroup) return;
+
+    const item = viewerGroup.files[viewerIndex];
+    showImage(viewerImg, viewerStage, item);
+
+    viewerFilename.textContent = item.name;
+    viewerCounter.textContent = `${viewerIndex + 1} / ${viewerGroup.files.length}`;
+    viewerPrev.disabled = viewerGroup.files.length < 2;
+    viewerNext.disabled = viewerGroup.files.length < 2;
+    viewerDeleteImage.hidden = !editMode;
+
+    Array.from(viewerThumbs.children).forEach((thumb, index) => {
+      const active = index === viewerIndex;
+      thumb.classList.toggle('active', active);
+      if (active && thumb.scrollIntoView) thumb.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  }
+
+  function openViewer(group, index) {
+    viewerGroup = group;
+    viewerIndex = index;
+    specEditor = null;
+
+    viewer.classList.toggle('fit-mode', fitMode);
+    viewerFit.textContent = fitMode ? 'Natural size' : 'Fit to window';
+
+    renderViewerMeta();
+
+    viewer.classList.add('open');
+    renderViewerThumbs();
+    renderViewerPanel();
+    updateViewer();
+  }
+
+  // Title and categories; in edit mode, a button to change the category.
+  function renderViewerMeta() {
+    viewerMeta.replaceChildren();
+    if (!viewerGroup) return;
+
+    const folder = document.createElement('strong');
+    folder.textContent = viewerGroup.title;
+
+    const line = document.createElement('div');
+    line.className = 'viewer-meta-line';
+    const categories = document.createElement('span');
+    categories.className = 'viewer-meta-categories';
+    categories.textContent = getCategories(viewerGroup).join(' / ') || 'No category';
+    line.append(categories);
+
+    if (editMode) {
+      const change = document.createElement('button');
+      change.type = 'button';
+      change.className = 'viewer-meta-edit';
+      change.textContent = 'Change category';
+      change.addEventListener('click', () => openCategoryEditor([viewerGroup]));
+      line.append(change);
+    }
+
+    viewerMeta.append(folder, line);
+  }
+
+  function closeViewer() {
+    viewer.classList.remove('open');
+    viewerImg.removeAttribute('src');
+    delete viewerImg.dataset.imageId;
+    viewerThumbs.replaceChildren();
+    viewerGroup = null;
+    specEditor = null;
+  }
+
+  // Asks before losing specifications being edited.
+  async function requestCloseViewer() {
+    if (!(await confirmDiscardDraft())) return;
+    closeViewer();
+  }
+
+  function stepViewer(direction) {
+    if (!viewerGroup || viewerGroup.files.length < 2) return;
+    viewerIndex = (viewerIndex + direction + viewerGroup.files.length) % viewerGroup.files.length;
+    updateViewer();
+  }
+
+  document.getElementById('viewerClose').addEventListener('click', () => requestCloseViewer());
+  viewerPrev.addEventListener('click', () => stepViewer(-1));
+  viewerNext.addEventListener('click', () => stepViewer(1));
+
+  viewerFit.addEventListener('click', () => {
+    fitMode = !fitMode;
+
+    try {
+      localStorage.setItem(FIT_MODE_KEY, String(fitMode));
+    } catch (error) {
+      console.warn('Could not save the fit mode to localStorage:', error);
+    }
+
+    viewer.classList.toggle('fit-mode', fitMode);
+    viewerFit.textContent = fitMode ? 'Natural size' : 'Fit to window';
+  });
+
+  viewer.addEventListener('click', event => {
+    if (event.target === viewer) requestCloseViewer();
+  });
+
+  document.addEventListener('keydown', event => {
+    // An open window (menu, help, save...) takes Escape before the viewer.
+    if (openModals.length) {
+      if (event.key === 'Escape') closeModal(openModals[openModals.length - 1]);
+      return;
+    }
+    if (!viewer.classList.contains('open')) return;
+
+    if (event.key === 'Escape') {
+      if (specEditor) cancelSpecificationEditor();
+      else closeViewer();
+      return;
+    }
+
+    // Arrows move the cursor while typing in a field.
+    const target = event.target;
+    if (target && target.closest && target.closest('input, textarea, select')) return;
+
+    if (event.key === 'ArrowLeft') stepViewer(-1);
+    if (event.key === 'ArrowRight') stepViewer(1);
+  });
+
+  /* ----------------------------------------
+     CATEGORY HELPERS
+  ---------------------------------------- */
+
+  function getCategories(group) {
+    return (group.categoryPath || group.path || '').split('/').filter(Boolean);
+  }
+
+  function selectedAt(level) {
+    return selections[level] || [];
+  }
+
+  function getGroupsMatchingParents(level) {
+    return groups.filter(group => {
+      const categories = getCategories(group);
+
+      for (let i = 0; i < level; i++) {
+        const selected = selectedAt(i);
+        if (selected.length === 0) return false;
+        if (!selected.includes(categories[i])) return false;
+      }
+
+      return true;
+    });
+  }
+
+  function getValuesAtLevel(level) {
+    const values = new Set();
+
+    getGroupsMatchingParents(level).forEach(group => {
+      const categories = getCategories(group);
+      const value = categories[level];
+      if (value) values.add(value);
+    });
+
+    return Array.from(values).sort((a, b) =>
+      a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' })
+    );
+  }
+
+  function pruneDescendants(changedLevel) {
+    for (let level = changedLevel + 1; level < maxDepth; level++) {
+      const parentSelection = selectedAt(level - 1);
+
+      if (parentSelection.length === 0) {
+        selections[level] = [];
+        continue;
+      }
+
+      const availableValues = getValuesAtLevel(level);
+      selections[level] = selectedAt(level).filter(value =>
+        availableValues.includes(value)
+      );
+    }
+  }
+
+  function toggleSelection(level, value) {
+    if (value === null) {
+      selections[level] = [];
+    } else {
+      const current = selectedAt(level);
+      const index = current.indexOf(value);
+
+      if (index === -1) current.push(value);
+      else current.splice(index, 1);
+
+      selections[level] = current;
+    }
+
+    pruneDescendants(level);
+    renderFilters();
+    renderFilterSummary();
+    renderGallery();
+  }
+
+  /* ----------------------------------------
+     FILTER RENDERING
+  ---------------------------------------- */
+
+  function renderFilters() {
+    filtersContainer.replaceChildren();
+
+    for (let level = 0; level < maxDepth; level++) {
+      if (level > 0 && selectedAt(level - 1).length === 0) break;
+
+      const values = getValuesAtLevel(level);
+      if (values.length === 0) break;
+
+      const row = document.createElement('div');
+      row.className = 'filter-row';
+
+      const label = document.createElement('div');
+      label.className = 'filter-label';
+      label.textContent = level === 0 ? 'Category' : `Subcategory ${level}`;
+
+      const options = document.createElement('div');
+      options.className = 'filter-options';
+
+      const selected = selectedAt(level);
+
+      const allButton = document.createElement('button');
+      allButton.type = 'button';
+      allButton.className = 'filter-chip all-chip';
+      if (selected.length === 0) allButton.classList.add('active');
+      allButton.textContent = 'All';
+      allButton.addEventListener('click', () => toggleSelection(level, null));
+      options.append(allButton);
+
+      values.forEach(value => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'filter-chip';
+        button.textContent = value;
+
+        if (selected.includes(value)) button.classList.add('active');
+
+        button.setAttribute(
+          'aria-pressed',
+          selected.includes(value) ? 'true' : 'false'
+        );
+
+        button.addEventListener('click', () => toggleSelection(level, value));
+        options.append(button);
+      });
+
+      row.append(label, options);
+      filtersContainer.append(row);
+    }
+  }
+
+  /* ----------------------------------------
+     FILTER SUMMARY
+  ---------------------------------------- */
+
+  function renderFilterSummary() {
+    const parts = [];
+
+    for (let level = 0; level < maxDepth; level++) {
+      const selected = selectedAt(level);
+
+      if (selected.length > 0) {
+        const label = level === 0 ? 'Category' : `Subcategory ${level}`;
+        const strong = document.createElement('strong');
+        strong.textContent = `${label}:`;
+
+        const text = document.createTextNode(` ${selected.join(', ')}`);
+        const wrapper = document.createElement('span');
+        wrapper.append(strong, text);
+        parts.push(wrapper);
+      }
+    }
+
+    filterSummary.replaceChildren();
+
+    parts.forEach((part, index) => {
+      if (index) filterSummary.append(document.createTextNode('  ·  '));
+      filterSummary.append(part);
+    });
+  }
+
+  /* ----------------------------------------
+     FILTER MATCHING
+  ---------------------------------------- */
+
+  function matchesFilters(group) {
+    const categories = getCategories(group);
+
+    for (let level = 0; level < maxDepth; level++) {
+      const selected = selectedAt(level);
+      if (selected.length === 0) continue;
+      if (!selected.includes(categories[level])) return false;
+    }
+
+    return true;
+  }
+
+  /* ----------------------------------------
+     GALLERY RENDERING
+  ---------------------------------------- */
+
+  const BATCH_SIZE = 50;
+  let visibleGroups = [];
+  let renderedCount = 0;
+  let galleryObserver = null;
+  let categorySections = new Map();
+  let loadMoreSentinel = null;
+  let fallbackScrollHandler = null;
+
+  function createGalleryCard(group) {
+    const card = document.createElement('article');
+    card.className = 'card';
+    let index = 0;
+
+    const head = document.createElement('div');
+    head.className = 'card-head';
+
+    const headingWrap = document.createElement('div');
+    const cardTitle = document.createElement('h2');
+    cardTitle.textContent = group.title;
+    cardTitle.title = group.title;
+    headingWrap.append(cardTitle);
+
+    const path = document.createElement('div');
+    path.className = 'path';
+    path.textContent = getCategories(group).slice(1).join(' / ') || '\u00a0';
+    path.title = getCategories(group).slice(1).join(' / ') || '\u00a0';
+    headingWrap.append(path);
+    head.append(headingWrap);
+
+    // Selection box, shown in edit mode only (CSS).
+    card.dataset.key = group.key;
+    const select = document.createElement('label');
+    select.className = 'card-select';
+    select.title = 'Select this folder';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selectedKeys.has(group.key);
+    checkbox.setAttribute('aria-label', `Select ${group.title}`);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) selectedKeys.add(group.key);
+      else selectedKeys.delete(group.key);
+      card.classList.toggle('is-selected', checkbox.checked);
+      updateEditBar();
+    });
+    card.classList.toggle('is-selected', checkbox.checked);
+    select.append(checkbox);
+    head.append(select);
+
+    const photo = document.createElement('div');
+    photo.className = 'photo';
+
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.addEventListener('click', () => openViewer(group, index));
+
+    const prev = document.createElement('button');
+    prev.className = 'nav prev';
+    prev.type = 'button';
+    prev.textContent = '‹';
+    prev.setAttribute('aria-label', 'Previous image');
+
+    const next = document.createElement('button');
+    next.className = 'nav next';
+    next.type = 'button';
+    next.textContent = '›';
+    next.setAttribute('aria-label', 'Next image');
+
+    const counter = document.createElement('span');
+    counter.className = 'photo-index';
+
+    function update() {
+      const item = group.files[index];
+      showImage(img, photo, item);
+      counter.textContent = `${index + 1} / ${group.files.length}`;
+      prev.disabled = group.files.length < 2;
+      next.disabled = group.files.length < 2;
+    }
+
+    prev.addEventListener('click', () => {
+      index = (index - 1 + group.files.length) % group.files.length;
+      update();
+    });
+    next.addEventListener('click', () => {
+      index = (index + 1) % group.files.length;
+      update();
+    });
+
+    photo.append(img, prev, next, counter);
+    card.append(head, photo);
+    update();
+    return card;
+  }
+
+  function appendNextGalleryBatch() {
+    if (renderedCount >= visibleGroups.length) {
+      if (loadMoreSentinel) loadMoreSentinel.remove();
+      return;
+    }
+
+    const end = Math.min(renderedCount + BATCH_SIZE, visibleGroups.length);
+    const fragment = document.createDocumentFragment();
+
+    for (; renderedCount < end; renderedCount++) {
+      const group = visibleGroups[renderedCount];
+      const categories = getCategories(group);
+      const rawCategory = categories[0] || 'Uncategorized';
+      const key = rawCategory.toLocaleLowerCase('en');
+      let section = categorySections.get(key);
+
+      if (!section) {
+        const sectionElement = document.createElement('section');
+        sectionElement.className = 'category-section';
+
+        const heading = document.createElement('div');
+        heading.className = 'category-heading';
+
+        const title = document.createElement('h2');
+        title.textContent = rawCategory
+          ? rawCategory.charAt(0).toLocaleUpperCase('en') + rawCategory.slice(1)
+          : 'Uncategorized';
+
+        const rule = document.createElement('span');
+        rule.className = 'category-rule';
+
+        heading.append(title, rule);
+
+        const cardGrid = document.createElement('div');
+        cardGrid.className = 'category-grid';
+
+        sectionElement.append(heading, cardGrid);
+        section = { section: sectionElement, cardGrid };
+        categorySections.set(key, section);
+        fragment.append(sectionElement);
+      }
+
+      section.cardGrid.append(createGalleryCard(group));
+    }
+
+    gallery.append(fragment);
+
+    if (renderedCount < visibleGroups.length) {
+      if (!loadMoreSentinel) {
+        loadMoreSentinel = document.createElement('div');
+        loadMoreSentinel.className = 'empty';
+        loadMoreSentinel.style.gridColumn = '1 / -1';
+        loadMoreSentinel.textContent = 'Scroll to load more…';
+      }
+
+      gallery.append(loadMoreSentinel);
+      if (galleryObserver) galleryObserver.observe(loadMoreSentinel);
+    } else if (loadMoreSentinel) {
+      loadMoreSentinel.remove();
+    }
+  }
+
+  function renderGallery() {
+    if (galleryObserver) galleryObserver.disconnect();
+    galleryObserver = null;
+
+    if (fallbackScrollHandler) {
+      window.removeEventListener('scroll', fallbackScrollHandler);
+      fallbackScrollHandler = null;
+    }
+
+    if (loadMoreSentinel) loadMoreSentinel.remove();
+    loadMoreSentinel = null;
+    categorySections = new Map();
+    renderedCount = 0;
+
+    const term = search.value.trim().toLocaleLowerCase('en');
+
+    visibleGroups = groups.filter(group => {
+      if (!matchesFilters(group)) return false;
+      if (!matchesSpecificationFilters(group)) return false;
+
+      const searchableText = [
+        group.title || '',
+        group.categoryPath || group.path || '',
+        ...group.files.map(file => file.name || '')
+      ].join(' ').toLocaleLowerCase('en');
+
+      return searchableText.includes(term);
+    });
+
+    updateEditBar();
+    gallery.replaceChildren();
+
+    if (!visibleGroups.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+
+      const title = document.createElement('strong');
+      title.textContent = 'No results';
+
+      empty.append(
+        title,
+        document.createTextNode('Try changing your filters or search term.')
+      );
+
+      gallery.append(empty);
+      return;
+    }
+
+    appendNextGalleryBatch();
+
+    if ('IntersectionObserver' in window && renderedCount < visibleGroups.length) {
+      galleryObserver = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          appendNextGalleryBatch();
+        }
+      }, { root: null, rootMargin: '700px 0px', threshold: 0 });
+
+      if (loadMoreSentinel) galleryObserver.observe(loadMoreSentinel);
+    } else if (renderedCount < visibleGroups.length) {
+      /*
+       * Fallback for browsers without IntersectionObserver.
+       * Load additional batches immediately while the page does not
+       * contain enough content to make scrolling possible.
+       */
+      fallbackScrollHandler = () => {
+        while (
+          renderedCount < visibleGroups.length &&
+          window.innerHeight + window.scrollY >=
+            document.documentElement.scrollHeight - 700
+        ) {
+          const previousCount = renderedCount;
+          appendNextGalleryBatch();
+
+          // Safety check: stop if a batch did not advance the counter.
+          if (renderedCount === previousCount) break;
+        }
+
+        if (renderedCount >= visibleGroups.length) {
+          window.removeEventListener('scroll', fallbackScrollHandler);
+          fallbackScrollHandler = null;
+        }
+      };
+
+      window.addEventListener('scroll', fallbackScrollHandler, { passive: true });
+
+      // Run once immediately so short pages are filled without requiring a scroll.
+      fallbackScrollHandler();
+    }
+  }
+
+  /* ----------------------------------------
+     IMAGE SOURCES
+     An image comes from a selected folder (File), from a file of the data folder
+     (gc_covers-NN.js / gc_images-NN.js, loaded on demand) or from a standalone export
+     (embedded blocks, parsed on demand).
+  ---------------------------------------- */
+
+  const MIME_BY_EXTENSION = {
+    avif: 'image/avif', bmp: 'image/bmp', gif: 'image/gif', jpg: 'image/jpeg',
+    jpeg: 'image/jpeg', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp',
+    tif: 'image/tiff', tiff: 'image/tiff'
+  };
+
+  function mimeFromName(name) {
+    const extension = String(name || '').split('.').pop().toLowerCase();
+    return MIME_BY_EXTENSION[extension] || 'application/octet-stream';
+  }
+
+  // Some systems give no type to AVIF files: the type is then taken from the extension.
+  function typedBlob(file, name) {
+    return file.type && file.type.startsWith('image/')
+      ? file
+      : new Blob([file], { type: mimeFromName(name) });
+  }
+
+  function dataUrlLength(size, type) {
+    return `data:${type};base64,`.length + 4 * Math.ceil(size / 3);
+  }
+
+  function dataUrlType(dataUrl) {
+    const match = /^data:([^;,]+)/i.exec(dataUrl || '');
+    return match ? match[1] : 'application/octet-stream';
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const comma = dataUrl.indexOf(',');
+    const header = dataUrl.slice(5, comma);
+    const type = header.split(';')[0] || 'application/octet-stream';
+    const payload = dataUrl.slice(comma + 1);
+
+    if (!/;base64$/i.test(header)) {
+      return new Blob([decodeURIComponent(payload)], { type });
+    }
+
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type });
+  }
+
+  // id -> { id, type: 'script' | 'embedded', file, src, index, revision, promise, images }
+  const chunkSources = new Map();
+
+  // <script src> works from file:// in every browser, unlike fetch().
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => { script.remove(); resolve(); };
+      script.onerror = () => { script.remove(); reject(new Error(`${src} could not be loaded.`)); };
+      document.body.append(script);
+    });
+  }
+
+  async function readScriptChunk(source) {
+    try {
+      await loadScript(source.src);
+    } catch (error) {
+      throw new Error(`data/${source.file} could not be loaded: copy it into the data folder next to GalleryCon.html.`);
+    }
+
+    const store = window.GALLERYCON_CHUNKS || {};
+    const content = store[source.id];
+    delete store[source.id];
+
+    if (!content || !isPlainObject(content.images)) {
+      throw new Error(`data/${source.file} does not contain the expected images.`);
+    }
+    if (source.revision !== null && source.revision !== undefined && content.revision !== source.revision) {
+      reportError('Loading',
+        `data/${source.file} is not the expected version (revision ${content.revision}, ` +
+        `expected ${source.revision}): copy the last downloaded version into the data folder.`);
+    }
+
+    source.images = content.images;
+    return source;
+  }
+
+  async function readEmbeddedChunk(source) {
+    const element = document.querySelector(`script.gallerycon-block[data-block="${source.index}"]`);
+    if (!element) throw new Error(`Embedded image block ${source.index} is missing from this file.`);
+
+    try {
+      source.images = JSON.parse(element.textContent || '{}');
+    } catch (error) {
+      throw new Error(`Embedded image block ${source.index} could not be read: ${error.message}`);
+    }
+    element.remove(); // frees the text once parsed
+    return source;
+  }
+
+  // One load per file, shared by every image it contains; a failure is reported once.
+  function loadChunk(id) {
+    const source = chunkSources.get(id);
+    if (!source) {
+      const error = new Error(`Unknown image file "${id}".`);
+      reportError('Loading', error.message);
+      error.reported = true;
+      return Promise.reject(error);
+    }
+
+    if (!source.promise) {
+      source.promise = (source.type === 'embedded' ? readEmbeddedChunk(source) : readScriptChunk(source))
+        .catch(error => {
+          reportError('Loading', error.message);
+          error.reported = true;
+          throw error;
+        });
+    }
+    return source.promise;
+  }
+
+  // The base64 text is converted once into a Blob and released from the loaded file.
+  function getImageBlob(item) {
+    if (item.blob) return Promise.resolve(item.blob);
+    if (item.file) return Promise.resolve(typedBlob(item.file, item.name));
+
+    if (!item.blobPromise) {
+      item.blobPromise = (async () => {
+        let dataUrl = item.dataUrl;
+
+        if (!dataUrl && item.sourceChunk) {
+          const source = await loadChunk(item.sourceChunk);
+          dataUrl = source.images[item.id];
+          delete source.images[item.id];
+        }
+
+        if (!dataUrl) {
+          const error = new Error(`${item.relativePath || item.name}: image data missing.`);
+          reportError('Loading', error.message);
+          error.reported = true;
+          throw error;
+        }
+
+        item.blob = dataUrlToBlob(dataUrl);
+        item.dataUrl = null;
+        return item.blob;
+      })();
+    }
+    return item.blobPromise;
+  }
+
+  async function getImageUrl(item) {
+    if (item.url) return item.url;
+
+    const blob = await getImageBlob(item);
+    if (!item.url) {
+      item.url = URL.createObjectURL(blob);
+      objectUrls.push(item.url);
+    }
+    return item.url;
+  }
+
+  async function getImageDataUrl(item) {
+    if (!item.blob && !item.file && !item.blobPromise) {
+      if (item.dataUrl) return item.dataUrl;
+
+      if (item.sourceChunk) {
+        const source = await loadChunk(item.sourceChunk);
+        const dataUrl = source.images[item.id];
+        if (dataUrl) return dataUrl;
+      }
+    }
+    return readFileAsDataUrl(await getImageBlob(item));
+  }
+
+  // Shows an image in an <img>, loading its data file first if needed.
+  function showImage(img, holder, item) {
+    img.alt = item.name;
+    img.dataset.imageId = item.id;
+    holder.classList.remove('is-missing');
+
+    if (item.url) {
+      img.src = item.url;
+      img.classList.remove('is-pending');
+      holder.classList.remove('is-loading');
+      return;
+    }
+
+    img.removeAttribute('src');
+    img.classList.add('is-pending');
+    holder.classList.add('is-loading');
+
+    getImageUrl(item)
+      .then(url => {
+        if (img.dataset.imageId !== item.id) return;
+        img.src = url;
+        img.classList.remove('is-pending');
+        holder.classList.remove('is-loading');
+      })
+      .catch(error => {
+        if (!error.reported) console.error(error);
+        if (img.dataset.imageId !== item.id) return;
+        holder.classList.remove('is-loading');
+        holder.classList.add('is-missing');
+      });
+  }
+
+  /* ----------------------------------------
+     ERROR CARD
+  ---------------------------------------- */
+
+  const errorCard = document.getElementById('errorCard');
+  const errorCardTitle = document.getElementById('errorCardTitle');
+  const errorList = document.getElementById('errorList');
+  const ERROR_LIST_LIMIT = 40;
+  let errorEntries = [];
+
+  function reportError(scope, message) {
+    console.warn(`[${scope}] ${message}`);
+    errorEntries.push({ scope, message });
+    renderErrors();
+  }
+
+  function clearErrors(scope = null) {
+    errorEntries = scope ? errorEntries.filter(entry => entry.scope !== scope) : [];
+    renderErrors();
+  }
+
+  function renderErrors() {
+    errorCard.hidden = errorEntries.length === 0;
+    errorCardTitle.textContent =
+      `${errorEntries.length} error${errorEntries.length !== 1 ? 's' : ''}`;
+    errorList.replaceChildren();
+
+    errorEntries.slice(0, ERROR_LIST_LIMIT).forEach(entry => {
+      const line = document.createElement('li');
+      const scope = document.createElement('span');
+      scope.textContent = `${entry.scope} · `;
+      line.append(scope, document.createTextNode(entry.message));
+      errorList.append(line);
+    });
+
+    if (errorEntries.length > ERROR_LIST_LIMIT) {
+      const more = document.createElement('li');
+      more.textContent =
+        `…and ${errorEntries.length - ERROR_LIST_LIMIT} more (see the browser console).`;
+      errorList.append(more);
+    }
+  }
+
+  document.getElementById('errorCardClose').addEventListener('click', () => clearErrors());
+
+  /* ----------------------------------------
+     MODALS
+  ---------------------------------------- */
+
+  const openModals = [];
+
+  function openModal(modal) {
+    if (modal.classList.contains('open')) return;
+    modal.classList.add('open');
+    openModals.push(modal);
+    document.body.classList.add('modal-open');
+  }
+
+  function closeModal(modal) {
+    if (!modal.classList.contains('open')) return;
+    modal.classList.remove('open');
+    const index = openModals.indexOf(modal);
+    if (index !== -1) openModals.splice(index, 1);
+    if (!openModals.length) document.body.classList.remove('modal-open');
+    modal.dispatchEvent(new Event('modalclose'));
+  }
+
+  // A click on the cross, on a [data-close] button or outside the window closes it.
+  document.querySelectorAll('.modal-backdrop').forEach(modal => {
+    modal.addEventListener('click', event => {
+      if (event.target === modal || event.target.closest('[data-close]')) closeModal(modal);
+    });
+  });
+
+  const confirmModal = document.getElementById('confirmModal');
+  const confirmTitle = document.getElementById('confirmTitle');
+  const confirmMessage = document.getElementById('confirmMessage');
+  const confirmOk = document.getElementById('confirmOk');
+  const confirmCancel = document.getElementById('confirmCancel');
+  let confirmResolve = null;
+
+  function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false }) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    confirmOk.textContent = confirmLabel;
+    confirmCancel.textContent = cancelLabel;
+    confirmOk.classList.toggle('button-danger', danger);
+
+    return new Promise(resolve => {
+      confirmResolve = resolve;
+      openModal(confirmModal);
+      confirmOk.focus();
+    });
+  }
+
+  confirmOk.addEventListener('click', () => {
+    const resolve = confirmResolve;
+    confirmResolve = null;
+    closeModal(confirmModal);
+    if (resolve) resolve(true);
+  });
+
+  confirmModal.addEventListener('modalclose', () => {
+    if (!confirmResolve) return;
+    const resolve = confirmResolve;
+    confirmResolve = null;
+    resolve(false);
+  });
+
+  /* ----------------------------------------
+     MENU AND HELP
+  ---------------------------------------- */
+
+  const menuModal = document.getElementById('menuModal');
+  const helpModal = document.getElementById('helpModal');
+  const menuButton = document.getElementById('menuButton');
+  const menuSave = document.getElementById('menuSave');
+  const menuSaveDescription = document.getElementById('menuSaveDescription');
+  const menuExport = document.getElementById('menuExport');
+  const unsavedBadge = document.getElementById('unsavedBadge');
+
+  let busy = false;
+
+  function setBusy(value) {
+    busy = value;
+    menuButton.disabled = value;
+  }
+
+  menuButton.addEventListener('click', () => {
+    const plan = computeSavePlan();
+    menuSave.disabled = plan.empty;
+
+    if (plan.empty) {
+      menuSaveDescription.textContent = 'Nothing to save: the data folder is up to date.';
+    } else {
+      const writes = plan.writes.length;
+      const deletes = plan.toDelete.length;
+      menuSaveDescription.textContent =
+        `${writes} file${writes !== 1 ? 's' : ''} to download` +
+        (deletes ? ` and ${deletes} to delete` : '') +
+        ', to copy into the data folder.';
+    }
+
+    menuExport.disabled = groups.length === 0;
+    menuEditMode.textContent = editMode ? 'Turn off edit mode' : 'Turn on edit mode';
+    openModal(menuModal);
+  });
+
+  document.getElementById('helpButton').addEventListener('click', () => openModal(helpModal));
+  // The header logo (base64) is reused when the window opens: no second copy in the file,
+  // nor in the standalone export (its template is taken before).
+  document.getElementById('aboutButton').addEventListener('click', () => {
+    const logo = document.querySelector('.brand-logo');
+    const source = logo ? logo.getAttribute('src') : '';
+    const aboutLogo = document.getElementById('aboutLogo');
+    if (source && !aboutLogo.getAttribute('src')) {
+      aboutLogo.src = source;
+      aboutLogo.hidden = false;
+      document.getElementById('aboutMark').hidden = true;
+    }
+    openModal(document.getElementById('aboutModal'));
+  });
+
+  document.getElementById('menuAddFolder').addEventListener('click', () => chooseFolder('add'));
+  document.getElementById('menuReplaceFolder').addEventListener('click', () => chooseFolder('replace'));
+
+  menuSave.addEventListener('click', () => {
+    closeModal(menuModal);
+    openSaveModal();
+  });
+
+  menuExport.addEventListener('click', () => {
+    closeModal(menuModal);
+    exportStandalone();
+  });
+
+  /* ----------------------------------------
+     UNSAVED CHANGES
+  ---------------------------------------- */
+
+  let dataVersion = 0;
+  let savedDataVersion = 0;
+
+  function markChanged() {
+    dataVersion++;
+    updateUnsavedState();
+  }
+
+  function updateUnsavedState() {
+    unsavedBadge.hidden = dataVersion === savedDataVersion;
+  }
+
+  window.addEventListener('beforeunload', event => {
+    if (dataVersion === savedDataVersion) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
+  /* ----------------------------------------
+     GALLERY DATA
+  ---------------------------------------- */
+
+  let nextImageNumber = 1;
+
+  function newImageId() {
+    return `i${(nextImageNumber++).toString(36).padStart(6, '0')}`;
+  }
+
+  function imageNumber(id) {
+    const number = parseInt(String(id || '').slice(1), 36);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function createImageItem(record, relativePath) {
+    const file = record.file || null;
+    const dataUrl = file ? null : (record.dataUrl || null);
+    const type = file
+      ? (file.type && file.type.startsWith('image/') ? file.type : mimeFromName(record.name))
+      : dataUrlType(dataUrl);
+
+    return {
+      id: newImageId(),
+      name: record.name,
+      relativePath,
+      type,
+      bytes: file ? dataUrlLength(file.size, type) : (dataUrl ? dataUrl.length : 0),
+      file,
+      dataUrl,
+      sourceChunk: null,
+      storedChunk: null,
+      blob: null,
+      blobPromise: null,
+      url: ''
+    };
+  }
+
+  // Builds the folders of a selected tree (or of a v1/v2 standalone export).
+  function buildGroups(imageRecords, specificationRecords = []) {
+    const specificationMap = new Map();
+
+    specificationRecords.forEach(record => {
+      const key = getFolderKey(record.relativePath);
+
+      let parsed = null;
+      let error = record.readError || null;
+
+      // Do not attempt to parse a file that could not be read.
+      if (!error) {
+        try {
+          parsed = JSON.parse(record.rawText);
+
+          if (!isPlainObject(parsed)) {
+            throw new Error('The JSON root must be an object.');
+          }
+        } catch (exception) {
+          error = exception.message || 'Invalid JSON';
+        }
+      }
+
+      if (error) reportError('Import', `${record.relativePath}: ${error}`);
+
+      specificationMap.set(key, {
+        relativePath: record.relativePath,
+        rawText: record.rawText || '',
+        data: error ? null : parsed,
+        error
+      });
+    });
+
+    const map = new Map();
+
+    imageRecords.forEach(record => {
+      const relative = record.relativePath || record.name;
+      const parts = relative.split('/').filter(Boolean);
+      const folderParts = parts.slice(1, -1);
+      const folderName = folderParts.length
+        ? folderParts[folderParts.length - 1]
+        : 'Images at root';
+
+      const categoryPath = folderParts.slice(0, -1).join('/');
+      const key = folderParts.join('/') || '__root__';
+
+      if (!map.has(key)) {
+        map.set(key, { folderName, categoryPath, files: [] });
+      }
+
+      map.get(key).files.push(createImageItem(record, relative));
+    });
+
+    return Array.from(map.entries())
+      .filter(([, value]) => value.files.length > 0)
+      .map(([key, value]) => ({
+        key,
+        title: value.folderName,
+        categoryPath: value.categoryPath,
+        path: value.categoryPath,
+        files: value.files,
+        specification: specificationMap.get(key) || null
+      }));
+  }
+
+  function replaceGroups(newGroups) {
+    objectUrls.forEach(url => URL.revokeObjectURL(url));
+    objectUrls = [];
+    groups = newGroups;
+  }
+
+  // Adds new folders; a folder already present receives the images it does not have yet
+  // (same name = same image) and keeps its own specifications.json.
+  function mergeGroups(newGroups) {
+    const byKey = new Map(groups.map(group => [group.key, group]));
+    const result = { addedImages: 0, addedFolders: 0, skipped: 0 };
+
+    newGroups.forEach(newGroup => {
+      const existing = byKey.get(newGroup.key);
+
+      if (!existing) {
+        groups.push(newGroup);
+        byKey.set(newGroup.key, newGroup);
+        result.addedFolders++;
+        result.addedImages += newGroup.files.length;
+        return;
+      }
+
+      const names = new Set(existing.files.map(item => item.name.toLowerCase()));
+      newGroup.files.forEach(item => {
+        const name = item.name.toLowerCase();
+        if (names.has(name)) {
+          result.skipped++;
+          return;
+        }
+        names.add(name);
+        existing.files.push(item);
+        result.addedImages++;
+      });
+
+      if (!existing.specification && newGroup.specification) {
+        existing.specification = newGroup.specification;
+      }
+    });
+
+    return result;
+  }
+
+  // Sorts, then rebuilds filters, specification search and gallery.
+  function refreshGallery() {
+    sortGroups();
+
+    maxDepth = groups.reduce(
+      (maximum, group) => Math.max(maximum, getCategories(group).length),
+      0
+    );
+
+    selections = Array.from({ length: maxDepth }, () => []);
+    selectedKeys.clear();
+
+    updateSummary();
+
+    search.hidden = groups.length === 0;
+    search.value = '';
+
+    rebuildSpecificationCatalog();
+    renderFilters();
+    renderFilterSummary();
+    renderGallery();
+  }
+
+  function updateSummary() {
+    const total = groups.reduce((sum, group) => sum + group.files.length, 0);
+    const specCount = groups.filter(group => group.specification).length;
+
+    summary.textContent = groups.length
+      ? `${groups.length} folder${groups.length !== 1 ? 's' : ''} with images · ` +
+        `${total} image${total !== 1 ? 's' : ''} · ` +
+        `${specCount} folder${specCount !== 1 ? 's' : ''} with specifications`
+      : 'Open the Menu to add a folder.';
+  }
+
+  function sortGroups() {
+    groups.forEach(group => {
+      group.files.sort((a, b) => a.name.localeCompare(b.name, 'en', {
+        numeric: true,
+        sensitivity: 'base'
+      }));
+    });
+
+    groups.sort((a, b) => {
+      const aPath = `${a.categoryPath}/${a.title}`;
+      const bPath = `${b.categoryPath}/${b.title}`;
+      return aPath.localeCompare(bPath, 'en', {
+        numeric: true,
+        sensitivity: 'base'
+      });
+    });
+  }
+
+  // After a deletion or a category change: categories, search and specification criteria
+  // still valid are kept.
+  function refreshKeepingFilters() {
+    maxDepth = groups.reduce(
+      (maximum, group) => Math.max(maximum, getCategories(group).length),
+      0
+    );
+
+    selections = Array.from({ length: maxDepth }, (_, level) => selections[level] || []);
+    if (maxDepth) {
+      const available = getValuesAtLevel(0);
+      selections[0] = selectedAt(0).filter(value => available.includes(value));
+      pruneDescendants(0);
+    }
+
+    updateSummary();
+    search.hidden = groups.length === 0;
+
+    rebuildSpecificationCatalog(true);
+    renderFilters();
+    renderFilterSummary();
+    renderGallery();
+  }
+
+  function serializeSpecification(specification) {
+    if (!specification) return null;
+    if (specification.data) {
+      return { relativePath: specification.relativePath, data: specification.data };
+    }
+    return {
+      relativePath: specification.relativePath,
+      error: specification.error || 'Invalid specification',
+      rawText: specification.rawText || ''
+    };
+  }
+
+  function restoreSpecification(stored) {
+    if (!stored) return null;
+    const data = isPlainObject(stored.data) ? stored.data : null;
+    return {
+      relativePath: stored.relativePath || '',
+      rawText: stored.rawText || '',
+      data,
+      error: data ? null : (stored.error || 'Invalid specification')
+    };
+  }
+
+  function serializeImage(item) {
+    return {
+      id: item.id,
+      name: item.name,
+      relativePath: item.relativePath,
+      type: item.type,
+      bytes: item.bytes
+    };
+  }
+
+  // Restores a gallery saved in the data folder ('storage') or in a standalone file ('embedded').
+  function restoreStoredGallery(meta, origin) {
+    const embedded = origin === 'embedded';
+
+    chunkSources.clear();
+    persistedChunks = new Map();
+    persistedRevision = embedded ? 0 : (Number(meta.revision) || 0);
+
+    if (!embedded) {
+      (meta.chunks || []).forEach(chunk => {
+        persistedChunks.set(chunk.id, {
+          id: chunk.id,
+          kind: chunk.kind,
+          file: chunk.file,
+          revision: chunk.revision,
+          imageIds: new Set()
+        });
+        chunkSources.set(chunk.id, {
+          id: chunk.id,
+          type: 'script',
+          file: chunk.file,
+          src: `data/${chunk.file}`,
+          revision: chunk.revision
+        });
+      });
+    }
+
+    let maxNumber = 0;
+
+    groups = (meta.materiels || []).map(materiel => ({
+      key: materiel.key,
+      title: materiel.title,
+      categoryPath: materiel.categoryPath || '',
+      path: materiel.categoryPath || '',
+      specification: restoreSpecification(materiel.specification),
+      files: (materiel.images || []).map(image => {
+        let sourceChunk = null;
+        let storedChunk = null;
+
+        if (embedded) {
+          if (Number.isInteger(image.block)) {
+            sourceChunk = `embedded-${image.block}`;
+            if (!chunkSources.has(sourceChunk)) {
+              chunkSources.set(sourceChunk, { id: sourceChunk, type: 'embedded', index: image.block });
+            }
+          }
+        } else if (image.chunk && persistedChunks.has(image.chunk)) {
+          sourceChunk = image.chunk;
+          storedChunk = image.chunk;
+          persistedChunks.get(image.chunk).imageIds.add(image.id);
+        }
+
+        if (!sourceChunk) {
+          reportError('Loading', `${image.relativePath || image.name}: no image file holds this image.`);
+        }
+
+        maxNumber = Math.max(maxNumber, imageNumber(image.id));
+
+        return {
+          id: image.id,
+          name: image.name,
+          relativePath: image.relativePath || image.name,
+          type: image.type || mimeFromName(image.name),
+          bytes: Number(image.bytes) || 0,
+          file: null,
+          dataUrl: null,
+          sourceChunk,
+          storedChunk,
+          blob: null,
+          blobPromise: null,
+          url: ''
+        };
+      })
+    })).filter(group => group.files.length > 0);
+
+    nextImageNumber = Math.max(Number(meta.nextImageId) || 1, maxNumber + 1);
+
+    applyStoredMention(meta.mention);
+    refreshGallery();
+    savedDataVersion = dataVersion;
+    updateUnsavedState();
+  }
+
+  /* ----------------------------------------
+     IMPORT A FOLDER (ADD OR REPLACE)
+     The selected folders are read only: they are never modified.
+  ---------------------------------------- */
+
+  async function readTextFile(file) {
+    if (typeof file.text === 'function') return file.text();
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error(`Could not read ${file.name}`));
+      reader.readAsText(file);
+    });
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error(`Could not read ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  let importMode = 'add';
+
+  function chooseFolder(mode) {
+    if (busy) return;
+    importMode = mode;
+    closeModal(menuModal);
+    input.click();
+  }
+
+  input.addEventListener('change', async () => {
+    const files = Array.from(input.files || []);
+    input.value = ''; // the same folder can be selected again
+    if (!files.length || busy) return;
+
+    setBusy(true);
+    clearErrors('Import');
+    saveStatus.textContent = 'Reading folder…';
+
+    try {
+      const imageFiles = files.filter(file =>
+        imageExt.test(file.name) || file.type.startsWith('image/')
+      );
+
+      const specificationFiles = files.filter(file =>
+        file.name.toLowerCase() === 'specifications.json'
+      );
+
+      const specificationRecords = [];
+
+      for (let i = 0; i < specificationFiles.length; i++) {
+        const file = specificationFiles[i];
+        const relativePath = file.webkitRelativePath || file.name;
+
+        if (i % 50 === 0) {
+          saveStatus.textContent = `Reading specifications ${i + 1} / ${specificationFiles.length}…`;
+        }
+
+        try {
+          specificationRecords.push({ relativePath, rawText: await readTextFile(file) });
+        } catch (error) {
+          specificationRecords.push({
+            relativePath,
+            rawText: '',
+            readError: error.message || 'Could not read file'
+          });
+        }
+      }
+
+      const newGroups = buildGroups(
+        imageFiles.map(file => ({
+          name: file.name,
+          file,
+          relativePath: file.webkitRelativePath || file.name
+        })),
+        specificationRecords
+      );
+
+      if (!newGroups.length) {
+        reportError('Import', 'The selected folder contains no images.');
+        saveStatus.textContent = '';
+        return;
+      }
+
+      const rootName = (files[0].webkitRelativePath || '').split('/')[0] || 'the selected folder';
+      const imageCount = newGroups.reduce((sum, group) => sum + group.files.length, 0);
+
+      if (importMode === 'replace') {
+        if (groups.length) {
+          const confirmed = await confirmDialog({
+            title: 'Replace the gallery?',
+            message:
+              `The current gallery (${groups.length} folders) will be replaced by ` +
+              `${newGroups.length} folders from “${rootName}”.\n` +
+              'The data folder only changes when you copy the files given by “Save changes”.',
+            confirmLabel: 'Replace',
+            danger: true
+          });
+
+          if (!confirmed) {
+            saveStatus.textContent = 'Import cancelled.';
+            return;
+          }
+        }
+
+        replaceGroups(newGroups);
+        markChanged();
+        saveStatus.textContent =
+          `Gallery replaced: ${newGroups.length} folders, ${imageCount} images from “${rootName}”.`;
+      } else {
+        const result = mergeGroups(newGroups);
+        if (result.addedImages) markChanged();
+
+        saveStatus.textContent =
+          `${result.addedImages} image${result.addedImages !== 1 ? 's' : ''} added ` +
+          `(${result.addedFolders} new folder${result.addedFolders !== 1 ? 's' : ''})` +
+          (result.skipped ? ` · ${result.skipped} already present` : '') + '.';
+      }
+
+      refreshGallery();
+    } catch (error) {
+      console.error(error);
+      reportError('Import', error.message || 'The folder could not be read.');
+      saveStatus.textContent = '';
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  /* ----------------------------------------
+     SAVE: FILES OF THE DATA FOLDER
+     The browser never writes to disk: the modified files are downloaded and the
+     user copies them into the data folder next to GalleryCon.html.
+
+     All their names start with gc_ so that they are not mistaken for other files.
+     data/gc_specifications.js  folders, categories, specifications and image index
+     data/gc_covers-NN.js       first image of each folder (small files: fast first display)
+     data/gc_images-NN.js       the other images (loaded when a folder is browsed)
+  ---------------------------------------- */
+
+  const ENTRY_OVERHEAD = 24; // quotes, id and comma around each image in a data file
+  let persistedChunks = new Map(); // what the data folder contains: id -> { id, kind, file, revision, imageIds }
+  let persistedRevision = 0;
+
+  function megabytes(value, fallback) {
+    const number = Number(value);
+    return (Number.isFinite(number) && number > 0 ? number : fallback) * 1e6;
+  }
+
+  function chunkNumber(id) {
+    return parseInt(String(id).split('-').pop(), 10) || 0;
+  }
+
+  function formatSize(bytes) {
+    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(2)} GB`;
+    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(bytes >= 1e8 ? 0 : 1)} MB`;
+    return `${Math.max(1, Math.round(bytes / 1e3))} KB`;
+  }
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Images keep their file whenever possible: only the files that gain or lose images
+  // are written again. New images fill the last file of their kind, then new files.
+  function computeSavePlan() {
+    const limits = {
+      covers: megabytes(window.COVERS_FILE_MAX_MB, 10),
+      images: megabytes(window.IMAGES_FILE_MAX_MB, 70)
+    };
+
+    const chunks = new Map();
+    persistedChunks.forEach((stored, id) => {
+      chunks.set(id, {
+        id,
+        kind: stored.kind,
+        file: stored.file,
+        revision: stored.revision,
+        previousCount: stored.imageIds.size,
+        imageIds: [],
+        bytes: 0,
+        isNew: false,
+        dirty: false
+      });
+    });
+
+    const assignment = new Map();
+    const itemsById = new Map();
+    const unplaced = { covers: [], images: [] };
+
+    groups.forEach(group => group.files.forEach((item, index) => {
+      itemsById.set(item.id, item);
+      const kind = index === 0 ? 'covers' : 'images';
+      const chunk = item.storedChunk ? chunks.get(item.storedChunk) : null;
+
+      if (chunk && chunk.kind === kind) {
+        chunk.imageIds.push(item.id);
+        chunk.bytes += item.bytes + ENTRY_OVERHEAD;
+        assignment.set(item.id, chunk.id);
+      } else {
+        unplaced[kind].push(item);
+      }
+    }));
+
+    chunks.forEach((chunk, id) => {
+      if (chunk.imageIds.length !== chunk.previousCount) chunk.dirty = true;
+      if (!chunk.imageIds.length) chunks.delete(id);
+    });
+
+    const createChunk = kind => {
+      let number = 1;
+      while (chunks.has(`${kind}-${String(number).padStart(2, '0')}`)) number++;
+      const id = `${kind}-${String(number).padStart(2, '0')}`;
+      const chunk = {
+        id,
+        kind,
+        file: `gc_${id}.js`,
+        revision: null,
+        previousCount: 0,
+        imageIds: [],
+        bytes: 0,
+        isNew: !persistedChunks.has(id),
+        dirty: true
+      };
+      chunks.set(id, chunk);
+      return chunk;
+    };
+
+    ['covers', 'images'].forEach(kind => {
+      let current = Array.from(chunks.values())
+        .filter(chunk => chunk.kind === kind)
+        .sort((a, b) => chunkNumber(b.id) - chunkNumber(a.id))[0] || null;
+
+      unplaced[kind].forEach(item => {
+        const size = item.bytes + ENTRY_OVERHEAD;
+        if (!current || (current.imageIds.length && current.bytes + size > limits[kind])) {
+          current = createChunk(kind);
+        }
+        current.imageIds.push(item.id);
+        current.bytes += size;
+        current.dirty = true;
+        assignment.set(item.id, current.id);
+      });
+    });
+
+    const revision = persistedRevision + 1;
+    const chunkList = Array.from(chunks.values()).sort((a, b) =>
+      a.kind === b.kind ? chunkNumber(a.id) - chunkNumber(b.id) : (a.kind === 'covers' ? -1 : 1)
+    );
+
+    const toDelete = [];
+    persistedChunks.forEach((stored, id) => {
+      if (!chunks.has(id)) toDelete.push(stored.file);
+    });
+
+    const writes = chunkList
+      .filter(chunk => chunk.dirty)
+      .map(chunk => ({ type: 'chunk', file: chunk.file, chunk }));
+
+    const specificationsDirty =
+      dataVersion !== savedDataVersion || writes.length > 0 || toDelete.length > 0;
+
+    // gc_specifications.js last: it refers to the image files.
+    if (specificationsDirty) writes.push({ type: 'specifications', file: 'gc_specifications.js' });
+
+    return {
+      revision,
+      chunks: chunkList,
+      assignment,
+      itemsById,
+      writes,
+      toDelete,
+      empty: writes.length === 0 && toDelete.length === 0,
+      committed: false
+    };
+  }
+
+  async function buildChunkBlob(plan, chunk, onProgress) {
+    const parts = [
+      '// GalleryCon image data: copy this file into the data folder next to GalleryCon.html.\n',
+      `(window.GALLERYCON_CHUNKS = window.GALLERYCON_CHUNKS || {})[${JSON.stringify(chunk.id)}] = ` +
+        `{"revision":${plan.revision},"images":{`
+    ];
+
+    for (let i = 0; i < chunk.imageIds.length; i++) {
+      const item = plan.itemsById.get(chunk.imageIds[i]);
+      const dataUrl = await getImageDataUrl(item);
+      item.bytes = dataUrl.length;
+      parts.push(`${i ? ',' : ''}${JSON.stringify(item.id)}:${JSON.stringify(dataUrl)}`);
+      if (i % 25 === 0 || i === chunk.imageIds.length - 1) onProgress(i + 1, chunk.imageIds.length);
+    }
+
+    parts.push('}};\n');
+    return new Blob(parts, { type: 'text/javascript;charset=utf-8' });
+  }
+
+  function buildSpecificationsBlob(plan) {
+    const meta = {
+      format: 3,
+      app: 'GalleryCon',
+      appVersion: window.APP_VERSION,
+      revision: plan.revision,
+      savedAt: new Date().toISOString(),
+      nextImageId: nextImageNumber,
+      mention: serializeMention(),
+      chunks: plan.chunks.map(chunk => ({
+        id: chunk.id,
+        kind: chunk.kind,
+        file: chunk.file,
+        revision: chunk.dirty ? plan.revision : chunk.revision,
+        count: chunk.imageIds.length,
+        bytes: chunk.bytes
+      })),
+      materiels: groups.map(group => ({
+        key: group.key,
+        title: group.title,
+        categoryPath: group.categoryPath,
+        specification: serializeSpecification(group.specification),
+        images: group.files.map(item => ({
+          ...serializeImage(item),
+          chunk: plan.assignment.get(item.id)
+        }))
+      }))
+    };
+
+    return new Blob([
+      '// GalleryCon data: folders, categories, specifications and image index.\n',
+      'window.GALLERYCON_SPECIFICATIONS = ',
+      JSON.stringify(meta),
+      ';\n'
+    ], { type: 'text/javascript;charset=utf-8' });
+  }
+
+  // Once every file is downloaded, the plan becomes the content of the data folder.
+  function commitSavePlan(plan) {
+    const committed = new Map();
+
+    plan.chunks.forEach(chunk => {
+      committed.set(chunk.id, {
+        id: chunk.id,
+        kind: chunk.kind,
+        file: chunk.file,
+        revision: chunk.dirty ? plan.revision : chunk.revision,
+        imageIds: new Set(chunk.imageIds)
+      });
+    });
+
+    groups.forEach(group => group.files.forEach(item => {
+      const target = plan.assignment.get(item.id);
+      const source = item.sourceChunk ? chunkSources.get(item.sourceChunk) : null;
+
+      // An image not loaded yet from a rewritten file is now read from its new file.
+      if (source && source.type === 'script' && !source.promise && !item.blob &&
+          !item.blobPromise && target !== item.sourceChunk) {
+        item.sourceChunk = target;
+      }
+      item.storedChunk = target;
+    }));
+
+    committed.forEach(chunk => {
+      const source = chunkSources.get(chunk.id);
+      if (!source || source.type !== 'script') {
+        chunkSources.set(chunk.id, {
+          id: chunk.id,
+          type: 'script',
+          file: chunk.file,
+          src: `data/${chunk.file}`,
+          revision: chunk.revision
+        });
+      } else if (!source.promise) {
+        source.revision = chunk.revision;
+      }
+    });
+
+    persistedChunks = committed;
+    persistedRevision = plan.revision;
+    savedDataVersion = dataVersion;
+    updateUnsavedState();
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  const saveModal = document.getElementById('saveModal');
+  const saveList = document.getElementById('saveList');
+  const saveEmpty = document.getElementById('saveEmpty');
+  const saveDeleteSection = document.getElementById('saveDeleteSection');
+  const saveDeleteList = document.getElementById('saveDeleteList');
+  const saveDone = document.getElementById('saveDone');
+  const saveAll = document.getElementById('saveAll');
+
+  let savePlan = null;
+  let downloadedFiles = new Set();
+  let saveRunning = false;
+
+  function describeWrite(write) {
+    if (write.type === 'specifications') {
+      return 'Folders, categories and specifications';
+    }
+    const chunk = write.chunk;
+    const content = chunk.kind === 'covers' ? 'first image of each folder' : 'other images';
+    const count = chunk.imageIds.length;
+    return `${chunk.isNew ? 'New' : 'Updated'} · ${count} image${count !== 1 ? 's' : ''} ` +
+      `(${content}) · ≈ ${formatSize(chunk.bytes)}`;
+  }
+
+  function openSaveModal() {
+    savePlan = computeSavePlan();
+    downloadedFiles = new Set();
+
+    saveList.replaceChildren();
+    saveDone.hidden = true;
+    saveEmpty.hidden = !savePlan.empty;
+    saveAll.hidden = savePlan.empty;
+
+    savePlan.writes.forEach(write => {
+      const row = document.createElement('div');
+      row.className = 'save-row';
+
+      const info = document.createElement('div');
+      info.className = 'save-row-info';
+
+      const name = document.createElement('strong');
+      name.textContent = write.file;
+
+      const details = document.createElement('span');
+      details.textContent = describeWrite(write);
+
+      const status = document.createElement('span');
+      status.className = 'save-row-status';
+
+      info.append(name, details, status);
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Download';
+      button.addEventListener('click', () => downloadWrite(write));
+
+      row.append(info, button);
+      saveList.append(row);
+      Object.assign(write, { row, status, button });
+    });
+
+    saveDeleteList.replaceChildren();
+    savePlan.toDelete.forEach(file => {
+      const line = document.createElement('li');
+      line.textContent = file;
+      saveDeleteList.append(line);
+    });
+    saveDeleteSection.hidden = savePlan.toDelete.length === 0;
+
+    openModal(saveModal);
+  }
+
+  function setSaveButtonsDisabled(disabled) {
+    saveAll.disabled = disabled;
+    if (savePlan) savePlan.writes.forEach(write => { write.button.disabled = disabled; });
+  }
+
+  async function downloadWrite(write) {
+    if (saveRunning) return false;
+    saveRunning = true;
+    setSaveButtonsDisabled(true);
+    write.row.classList.remove('is-failed');
+
+    try {
+      let blob;
+      if (write.type === 'specifications') {
+        write.status.textContent = 'Preparing…';
+        blob = buildSpecificationsBlob(savePlan);
+      } else {
+        blob = await buildChunkBlob(savePlan, write.chunk, (done, total) => {
+          write.status.textContent = `Preparing ${done} / ${total}…`;
+        });
+      }
+
+      downloadBlob(blob, write.file);
+      downloadedFiles.add(write.file);
+      write.row.classList.add('is-done');
+      write.status.textContent = `Downloaded · ${formatSize(blob.size)}`;
+      write.button.textContent = 'Download again';
+
+      if (!savePlan.committed && downloadedFiles.size === savePlan.writes.length) {
+        commitSavePlan(savePlan);
+        savePlan.committed = true;
+        saveDone.hidden = false;
+      }
+      return true;
+    } catch (error) {
+      console.error(error);
+      write.row.classList.add('is-failed');
+      write.status.textContent = 'Not created: see the errors.';
+      reportError('Save', `${write.file} was not created: ${error.message}`);
+      return false;
+    } finally {
+      saveRunning = false;
+      setSaveButtonsDisabled(false);
+    }
+  }
+
+  saveAll.addEventListener('click', async () => {
+    if (!savePlan) return;
+    clearErrors('Save');
+
+    for (const write of savePlan.writes) {
+      if (downloadedFiles.has(write.file)) continue;
+      if (!(await downloadWrite(write))) break;
+      await sleep(600); // lets the browser start each download
+    }
+  });
+
+  /* ----------------------------------------
+     EXPORT STANDALONE GALLERY
+     One HTML file with everything inside. The images are cut into several
+     embedded blocks so that no single text exceeds the browser limits.
+  ---------------------------------------- */
+
+  const EMBEDDED_BLOCK_BYTES = 10e6;
+
+  function escapeJsonForHtml(text) {
+    return text
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/&/g, '\\u0026');
+  }
+
+  // First images first, in gallery order, then the other images.
+  function exportOrder() {
+    const covers = [];
+    const others = [];
+    groups.forEach(group => group.files.forEach((item, index) => {
+      (index === 0 ? covers : others).push(item);
+    }));
+    return covers.concat(others);
+  }
+
+  async function exportStandalone() {
+    if (!groups.length || busy) return;
+
+    clearErrors('Export');
+    const items = exportOrder();
+    const estimate = templateHtml.length +
+      items.reduce((sum, item) => sum + item.bytes + ENTRY_OVERHEAD, 0) +
+      groups.length * 600;
+
+    const warningBytes = megabytes(window.STANDALONE_WARNING_MB, 50);
+    if (estimate > warningBytes) {
+      const confirmed = await confirmDialog({
+        title: 'Large standalone file',
+        message:
+          `This file will weigh about ${formatSize(estimate)}.\n` +
+          `Above ${formatSize(warningBytes)}, a standalone file may slow down the browser, ` +
+          'make it crash or fail to open.\n' +
+          'For a large gallery, prefer “Save changes” (data folder).',
+        confirmLabel: 'Export anyway'
+      });
+      if (!confirmed) return;
+    }
+
+    setBusy(true);
+
+    try {
+      const bodyMatch = /<body[^>]*>/i.exec(templateHtml);
+      if (!bodyMatch) throw new Error('Could not find the document body for export.');
+      const bodyEnd = bodyMatch.index + bodyMatch[0].length;
+
+      let html = new Blob(['<!DOCTYPE html>\n', templateHtml.slice(0, bodyEnd), '\n']);
+      const blockOf = new Map();
+      let block = {};
+      let blockSize = 0;
+      let blockIndex = 0;
+      let failed = 0;
+
+      // Each block is added to the Blob at once: the memory of its text is released.
+      const flushBlock = () => {
+        if (!blockSize) return;
+        html = new Blob([
+          html,
+          `<script type="application/json" class="gallerycon-data gallerycon-block" data-block="${blockIndex}">`,
+          escapeJsonForHtml(JSON.stringify(block)),
+          '</' + 'script>\n'
+        ]);
+        blockIndex++;
+        block = {};
+        blockSize = 0;
+      };
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        let dataUrl;
+
+        try {
+          dataUrl = await getImageDataUrl(item);
+        } catch (error) {
+          failed++;
+          if (!error.reported) reportError('Export', `${item.relativePath || item.name}: ${error.message}`);
+          continue;
+        }
+
+        if (blockSize && blockSize + dataUrl.length > EMBEDDED_BLOCK_BYTES) flushBlock();
+        block[item.id] = dataUrl;
+        blockSize += dataUrl.length;
+        blockOf.set(item.id, blockIndex);
+
+        if (i % 25 === 0) saveStatus.textContent = `Embedding images ${i + 1} / ${items.length}…`;
+      }
+      flushBlock();
+
+      const meta = {
+        format: 3,
+        app: 'GalleryCon',
+        appVersion: window.APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        nextImageId: nextImageNumber,
+        mention: serializeMention(),
+        materiels: groups.map(group => ({
+          key: group.key,
+          title: group.title,
+          categoryPath: group.categoryPath,
+          specification: serializeSpecification(group.specification),
+          images: group.files.map(item => ({
+            ...serializeImage(item),
+            block: blockOf.has(item.id) ? blockOf.get(item.id) : null
+          }))
+        }))
+      };
+
+      html = new Blob([
+        html,
+        '<script type="application/json" id="embeddedGalleryData" class="gallerycon-data">',
+        escapeJsonForHtml(JSON.stringify(meta)),
+        '</' + 'script>\n',
+        templateHtml.slice(bodyEnd)
+      ], { type: 'text/html;charset=utf-8' });
+
+      downloadBlob(html, 'gallerycon-standalone.html');
+
+      saveStatus.textContent =
+        `Gallery exported (${items.length - failed} images, ${formatSize(html.size)}).`;
+      if (failed) {
+        reportError('Export', `${failed} image${failed !== 1 ? 's are' : ' is'} missing from the exported file.`);
+      }
+    } catch (error) {
+      console.error(error);
+      reportError('Export', error.message || 'The export failed.');
+      saveStatus.textContent = 'Export failed: see the errors.';
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Copy of the page without its data, taken before anything is rendered:
+  // it is the base of the standalone export.
+  function buildTemplateHtml() {
+    const root = document.documentElement.cloneNode(false);
+    root.append(document.head.cloneNode(true));
+
+    const body = document.body.cloneNode(false);
+    body.removeAttribute('class');
+
+    Array.from(document.body.childNodes).forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE &&
+          (node.id === 'embeddedGalleryData' || node.classList.contains('gallerycon-data'))) {
+        return;
+      }
+      body.append(node.cloneNode(true));
+    });
+
+    root.append(body);
+    return root.outerHTML;
+  }
+
+  /* ----------------------------------------
+     EDIT MODE: SELECTION AND DELETION OF FOLDERS
+  ---------------------------------------- */
+
+  const editBadge = document.getElementById('editBadge');
+  const editBar = document.getElementById('editBar');
+  const editSelectionCount = document.getElementById('editSelectionCount');
+  const editSelectShown = document.getElementById('editSelectShown');
+  const editClearSelection = document.getElementById('editClearSelection');
+  const editDeleteSelected = document.getElementById('editDeleteSelected');
+  const menuEditMode = document.getElementById('menuEditMode');
+  const editChangeCategory = document.getElementById('editChangeCategory');
+
+  let editMode = false;
+  const selectedKeys = new Set();
+
+  function setEditMode(value) {
+    editMode = value;
+    document.body.classList.toggle('edit-mode', value);
+    editBadge.hidden = !value;
+    editBar.hidden = !value;
+    if (!value) {
+      selectedKeys.clear();
+      syncCardSelection();
+      mentionInput.blur();
+    }
+    updateEditBar();
+    updateMentionBanner();
+  }
+
+  function syncCardSelection() {
+    gallery.querySelectorAll('.card').forEach(card => {
+      const selected = selectedKeys.has(card.dataset.key);
+      card.classList.toggle('is-selected', selected);
+      const checkbox = card.querySelector('.card-select input');
+      if (checkbox) checkbox.checked = selected;
+    });
+  }
+
+  function updateEditBar() {
+    const count = selectedKeys.size;
+    editSelectionCount.textContent = count
+      ? `${count} folder${count !== 1 ? 's' : ''} selected`
+      : 'No folder selected';
+    editDeleteSelected.disabled = count === 0;
+    editDeleteSelected.textContent = count ? `Delete (${count})` : 'Delete';
+    editClearSelection.disabled = count === 0;
+    editChangeCategory.disabled = count === 0;
+    editChangeCategory.textContent = count ? `Change category (${count})` : 'Change category';
+    editSelectShown.textContent = `Select all shown (${visibleGroups.length})`;
+    editSelectShown.disabled = visibleGroups.length === 0;
+  }
+
+  editSelectShown.addEventListener('click', () => {
+    visibleGroups.forEach(group => selectedKeys.add(group.key));
+    syncCardSelection();
+    updateEditBar();
+  });
+
+  editClearSelection.addEventListener('click', () => {
+    selectedKeys.clear();
+    syncCardSelection();
+    updateEditBar();
+  });
+
+  editChangeCategory.addEventListener('click', () => {
+    openCategoryEditor(groups.filter(group => selectedKeys.has(group.key)));
+  });
+
+  /* ----------------------------------------
+     IMAGES OF A FOLDER (edit mode, in the viewer)
+     Added images are read from the selected files; deleted images leave the gallery.
+     The source folders are never modified.
+  ---------------------------------------- */
+
+  const imageInput = document.getElementById('imageInput');
+  const viewerDeleteImage = document.getElementById('viewerDeleteImage');
+
+  // Rebuilds the card of a folder in place (its first image may have changed).
+  function refreshCard(group) {
+    const card = Array.from(gallery.querySelectorAll('.card'))
+      .find(element => element.dataset.key === group.key);
+    if (card) card.replaceWith(createGalleryCard(group));
+  }
+
+  function addImagesToViewerGroup() {
+    if (!viewerGroup || !editMode || busy) return;
+    imageInput.click();
+  }
+
+  imageInput.addEventListener('change', () => {
+    const files = Array.from(imageInput.files || []);
+    imageInput.value = '';
+    const group = viewerGroup;
+    if (!files.length || !group) return;
+
+    const names = new Set(group.files.map(item => item.name.toLowerCase()));
+    const added = [];
+    let skipped = 0;
+    let ignored = 0;
+
+    files.forEach(file => {
+      if (!(imageExt.test(file.name) || file.type.startsWith('image/'))) {
+        ignored++;
+        return;
+      }
+      const name = file.name.toLowerCase();
+      if (names.has(name)) {
+        skipped++;
+        return;
+      }
+      names.add(name);
+
+      const relativePath = [group.categoryPath, group.title, file.name].filter(Boolean).join('/');
+      const item = createImageItem({ name: file.name, file }, relativePath);
+      group.files.push(item);
+      added.push(item);
+    });
+
+    if (added.length) {
+      group.files.sort((a, b) => a.name.localeCompare(b.name, 'en', {
+        numeric: true,
+        sensitivity: 'base'
+      }));
+      markChanged();
+      updateSummary();
+      viewerIndex = group.files.indexOf(added[0]);
+      renderViewerThumbs();
+      updateViewer();
+      refreshCard(group);
+    }
+
+    saveStatus.textContent =
+      `${added.length} image${added.length !== 1 ? 's' : ''} added to “${group.title}”` +
+      (skipped ? ` · ${skipped} already present` : '') +
+      (ignored ? ` · ${ignored} not an image` : '') + '.';
+  });
+
+  viewerDeleteImage.addEventListener('click', async () => {
+    const group = viewerGroup;
+    if (!group || !editMode) return;
+
+    const item = group.files[viewerIndex];
+    const last = group.files.length === 1;
+    const confirmed = await confirmDialog({
+      title: last ? 'Delete the last image?' : 'Delete this image?',
+      message: (last
+        ? `“${item.name}” is the last image of “${group.title}”: the folder will be removed from the gallery.`
+        : `“${item.name}” will be removed from “${group.title}”.`) +
+        '\nYour source folders are not affected.',
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (!confirmed || viewerGroup !== group) return;
+
+    if (last) {
+      closeViewer();
+      groups = groups.filter(candidate => candidate !== group);
+      selectedKeys.delete(group.key);
+      markChanged();
+      refreshKeepingFilters();
+      saveStatus.textContent = `“${group.title}” deleted (no image left).`;
+      return;
+    }
+
+    group.files.splice(viewerIndex, 1);
+    viewerIndex = Math.min(viewerIndex, group.files.length - 1);
+    markChanged();
+    updateSummary();
+    renderViewerThumbs();
+    updateViewer();
+    refreshCard(group);
+    saveStatus.textContent = `Image deleted from “${group.title}”.`;
+  });
+
+  /* ----------------------------------------
+     CATEGORY EDITING (edit mode)
+     The category is the path above the folder ("Land/Tanks/Main Battle Tanks"); it is
+     saved in gc_specifications.js and in the standalone export. The folder keeps its key:
+     adding its source folder again still completes it.
+  ---------------------------------------- */
+
+  const categoryModal = document.getElementById('categoryModal');
+  const categoryModalTarget = document.getElementById('categoryModalTarget');
+  const categoryInput = document.getElementById('categoryInput');
+  const categoryList = document.getElementById('categoryList');
+  const categoryError = document.getElementById('categoryError');
+  let categoryTargets = [];
+
+  function formatCategoryPath(path) {
+    return String(path || '').split('/').filter(Boolean).join(' / ');
+  }
+
+  function parseCategoryPath(text) {
+    return String(text || '').split('/').map(part => part.trim()).filter(Boolean).join('/');
+  }
+
+  // Every existing category, with its parent levels ("Land", "Land/Tanks"...).
+  function existingCategoryPaths() {
+    const paths = new Set();
+    groups.forEach(group => {
+      const parts = getCategories(group);
+      for (let i = 1; i <= parts.length; i++) paths.add(parts.slice(0, i).join('/'));
+    });
+    return Array.from(paths).sort((a, b) =>
+      a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' })
+    );
+  }
+
+  function openCategoryEditor(targets) {
+    if (!targets.length || !editMode) return;
+    categoryTargets = targets;
+
+    categoryModalTarget.textContent = targets.length === 1
+      ? `Folder: ${targets[0].title}`
+      : `${targets.length} selected folders`;
+
+    categoryList.replaceChildren();
+    existingCategoryPaths().forEach(path => {
+      const option = document.createElement('option');
+      option.value = formatCategoryPath(path);
+      categoryList.append(option);
+    });
+
+    const shared = targets.every(group => group.categoryPath === targets[0].categoryPath)
+      ? targets[0].categoryPath
+      : '';
+    categoryInput.value = formatCategoryPath(shared);
+    categoryError.hidden = true;
+
+    openModal(categoryModal);
+    categoryInput.focus();
+    categoryInput.select();
+  }
+
+  function saveCategory() {
+    const path = parseCategoryPath(categoryInput.value);
+    if (!path) {
+      categoryError.textContent = 'Enter at least one category.';
+      categoryError.hidden = false;
+      return;
+    }
+
+    closeModal(categoryModal);
+    const changed = categoryTargets.filter(group => group.categoryPath !== path);
+    categoryTargets = [];
+    if (!changed.length) return;
+
+    changed.forEach(group => {
+      group.categoryPath = path;
+      group.path = path;
+    });
+
+    markChanged();
+    sortGroups();
+    refreshKeepingFilters();
+    if (viewerGroup) renderViewerMeta();
+
+    saveStatus.textContent =
+      `${changed.length} folder${changed.length !== 1 ? 's' : ''} moved to “${formatCategoryPath(path)}”.`;
+  }
+
+  document.getElementById('categorySave').addEventListener('click', saveCategory);
+  categoryInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveCategory();
+    }
+  });
+
+  editDeleteSelected.addEventListener('click', async () => {
+    const doomed = groups.filter(group => selectedKeys.has(group.key));
+    if (!doomed.length || busy) return;
+
+    const images = doomed.reduce((sum, group) => sum + group.files.length, 0);
+    const confirmed = await confirmDialog({
+      title: `Delete ${doomed.length} folder${doomed.length !== 1 ? 's' : ''}?`,
+      message:
+        `${doomed.length} folder${doomed.length !== 1 ? 's' : ''} and ${images} ` +
+        `image${images !== 1 ? 's' : ''} will be removed from the gallery.\n` +
+        'Your source folders are not affected. The data folder changes only when you copy ' +
+        'the files given by “Save changes”.',
+      confirmLabel: 'Delete',
+      danger: true
+    });
+    if (!confirmed) return;
+
+    groups = groups.filter(group => !selectedKeys.has(group.key));
+    selectedKeys.clear();
+    markChanged();
+    refreshKeepingFilters();
+    saveStatus.textContent =
+      `${doomed.length} folder${doomed.length !== 1 ? 's' : ''} deleted.`;
+  });
+
+  menuEditMode.addEventListener('click', () => {
+    setEditMode(!editMode);
+    closeModal(menuModal);
+  });
+
+  editBadge.addEventListener('click', () => setEditMode(false));
+
+  /* ----------------------------------------
+     BOTTOM MENTION BANNER
+     Written in edit mode; turned on as soon as it holds a text.
+     Saved in gc_specifications.js and in the standalone export.
+  ---------------------------------------- */
+
+  const MENTION_DEFAULT_COLOR = '#18212b';
+  const mentionBanner = document.getElementById('mentionBanner');
+  const mentionText = document.getElementById('mentionText');
+  const mentionInput = document.getElementById('mentionInput');
+  const mentionColor = document.getElementById('mentionColor');
+
+  let mention = { text: '', color: MENTION_DEFAULT_COLOR };
+
+  function updateMentionBanner() {
+    const active = mention.text.trim() !== '';
+    const visible = active || editMode;
+
+    mentionText.textContent = mention.text.trim();
+    mentionText.style.color = mention.color;
+    mentionInput.style.color = mention.color;
+    if (mentionInput.value !== mention.text) mentionInput.value = mention.text;
+    mentionColor.value = mention.color;
+
+    mentionBanner.hidden = !visible;
+    document.body.classList.toggle('has-mention', visible);
+  }
+
+  // Data saved with the gallery: nothing when the banner is off.
+  function serializeMention() {
+    const text = mention.text.trim();
+    return text ? { text, color: mention.color } : null;
+  }
+
+  // Restores the banner of a saved gallery, without marking it as changed.
+  function applyStoredMention(stored) {
+    const text = stored && typeof stored.text === 'string' ? stored.text.slice(0, 200) : '';
+    const color = stored && /^#[0-9a-f]{6}$/i.test(stored.color || '')
+      ? stored.color.toLowerCase()
+      : MENTION_DEFAULT_COLOR;
+    mention = { text, color };
+    updateMentionBanner();
+  }
+
+  mentionInput.addEventListener('input', () => {
+    if (!editMode) return;
+    mention.text = mentionInput.value;
+    markChanged();
+    updateMentionBanner();
+  });
+
+  mentionColor.addEventListener('input', () => {
+    if (!editMode) return;
+    mention.color = mentionColor.value.toLowerCase();
+    markChanged();
+    updateMentionBanner();
+  });
+
+  updateMentionBanner();
+
+  /* ----------------------------------------
+     STARTUP: EMBEDDED DATA (STANDALONE FILE) OR DATA FOLDER
+  ---------------------------------------- */
+
+  function loadDataFolder() {
+    summary.textContent = 'Loading the gallery…';
+
+    loadScript('data/gc_specifications.js')
+      .then(() => {
+        const meta = window.GALLERYCON_SPECIFICATIONS;
+        delete window.GALLERYCON_SPECIFICATIONS;
+
+        if (!meta || meta.format !== 3) {
+          reportError('Loading', 'data/gc_specifications.js is not a GalleryCon data file.');
+          summary.textContent = 'Open the Menu to add a folder.';
+          return;
+        }
+        restoreStoredGallery(meta, 'storage');
+      })
+      .catch(() => {
+        // No data folder yet: empty gallery.
+        summary.textContent = 'Open the Menu to add a folder.';
+      });
+  }
+
+  const embeddedData = document.getElementById('embeddedGalleryData');
+
+  if (embeddedData) {
+    try {
+      const records = JSON.parse(embeddedData.textContent || '[]');
+
+      // Version 3: index + image blocks.
+      if (records && records.format === 3) {
+        restoreStoredGallery(records, 'embedded');
+      }
+      // Version 2 export format.
+      else if (records && !Array.isArray(records) && Array.isArray(records.images)) {
+        groups = buildGroups(
+          records.images,
+          Array.isArray(records.specifications) ? records.specifications : []
+        );
+        refreshGallery();
+      }
+      // Legacy export format: an array containing image records only.
+      else if (Array.isArray(records) && records.length) {
+        groups = buildGroups(records, []);
+        refreshGallery();
+      }
+    } catch (error) {
+      console.error('Could not load embedded gallery data:', error);
+      summary.textContent = 'The embedded gallery data could not be read.';
+    }
+    embeddedData.remove();
+  } else {
+    loadDataFolder();
+  }
+
+  updateUnsavedState();
+
+  /* ----------------------------------------
+     TEXT SEARCH
+  ---------------------------------------- */
+
+  search.addEventListener('input', renderGallery);
+
+})();
+</script>
+</body>
+</html>

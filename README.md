@@ -27,14 +27,25 @@ The selected folders are only read: GalleryCon never modifies them.
 
 ## Features
 
-- Filters by category, text search, search by technical specification (lengths compared in
-  metres, origin and user countries).
+- **Top bar**, always in sight while scrolling: text search, **Categories** (blue) and
+  **Specifications** (green) buttons opening their panels (closed by a click outside), statistics
+  and card scale. The active filters (and the text search) show as chips in a strip stuck under
+  the bar, with the number of images and folders left: click a chip to remove it.
+- Search by technical specification: lengths compared in metres, origin and user countries.
 - Image viewer with thumbnails and the specifications of the folder.
-- **Edit mode** (Menu): delete folders, change their category, add or delete images, edit the
-  specifications.
+- **Edit mode** (Menu): delete, rename folders or change their category, add or delete images,
+  edit the specifications and create your own specification groups (name / value / unit lines).
+- **Add a folder**: when a folder of the import already exists in the gallery (same categories and
+  same name), a window lets you choose to merge it (its missing images are added) or to leave it
+  unchanged.
+- **Settings** (Menu, always available): card size, *Fit to window* and specifications panel of
+  the viewer at opening, specification criteria shown at opening (including the ones you add by
+  hand; the values typed are never saved), bottom banner and data file sizes. **Use the current
+  view** copies what is on screen; **Save settings** downloads `gc_config.js`. The scale and viewer
+  controls only change the current view.
 - **Bottom banner**: in edit mode, type a text in the white banner at the bottom of the page and
-  pick its color. As soon as it holds a text, it stays shown (bold, centered) on every page; empty,
-  it disappears. It is saved with the gallery.
+  pick its color (or set it in Settings). As soon as it holds a text, it stays shown (bold,
+  centered) on every page; empty, it disappears. It is saved in `gc_config.js`.
 - Built-in help (**Help** button).
 
 ## Saving the gallery
@@ -46,6 +57,7 @@ download. Copy them into the `data` folder next to `GalleryCon.html`, replacing 
 GalleryCon/
 ├── GalleryCon.html
 └── data/
+    ├── gc_config.js           settings (optional: without it, the defaults apply)
     ├── gc_specifications.js   folders, categories, specifications and image index
     ├── gc_covers-01.js        first image of each folder (10 MB files)
     └── gc_images-01.js        other images (70 MB files)
@@ -71,11 +83,17 @@ Optional, in a folder next to its images. Every field is optional:
     { "name": "Length", "value": "9.87", "units": "m" },
     { "name": "Weight, Combat", "value": "56.5", "units": "t" }
   ],
-  "odinUrl": "https://…"
+  "odinUrl": "https://…",
+  "Armament": [
+    { "name": "Main gun", "value": "120", "units": "mm" },
+    { "name": "Machine gun", "value": "12.7", "units": "mm" }
+  ]
 }
 ```
 
 - `origin` and `proliferation` feed the country filters.
+- Any other key holding a list of `{ name, value, units }` lines (like `Armament` above) is a
+  custom group: shown under its own title, editable in GalleryCon and searchable.
 - `dimensions`: one entry per value. Values are text (`"9.87"`, `"25 cm"`); `"INA"` or ranges are
   shown but not searchable. Lengths need a unit (mm, cm, m, km, in, ft, yd) to be searchable.
 - Specifications edited in GalleryCon are saved in `data/gc_specifications.js`, never in your

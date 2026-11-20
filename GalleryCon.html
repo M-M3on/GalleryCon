@@ -7,6 +7,33 @@
 <!--
 CHANGELOG
 
+Version 3.0
+- Specification editor: custom groups ("+ Custom group"), each holding name / value / unit
+  lines; the group can be renamed or removed. Their numbers are searchable like the dimensions.
+- Image viewer: the thumbnails not loaded yet show a loading animation.
+- Add a folder: when folders of the import already exist in the gallery (same categories and
+  same name), a window asks which ones to merge; the others are left unchanged.
+- Edit mode: rename a folder (viewer, or edit bar with one folder selected).
+- Top bar following the top of the window, full width: search, "Categories" and
+  "Specifications" buttons (with the number of active filters), statistics and scale; the edit
+  bar is its second line. The active filters are chips in a strip stuck under the bar (a click
+  removes one, "Clear all"): blue for the categories, green for the specifications, grey for
+  the text search. The strip also gives the number of images and folders left ("33 images in
+  11 folders").
+  The two buttons open panels fixed under the first line of the bar, over the strip; they close
+  with a click outside or Escape. Everything about specifications is green.
+  The specification search adds a criterion from one list, shows one line per criterion and
+  keeps its explanations behind "?". "Hide filters" is gone.
+- Settings gathered in data/gc_config.js (and in the standalone export), apart from the folder
+  data: display at opening (card size, "Fit to window", specifications shown in the viewer),
+  specification criteria shown at opening (the ones added by hand included; never the values),
+  bottom banner, data file sizes. Menu → Settings (always available) edits them; "Use the
+  current view" copies the screen, "Save settings" applies them and downloads gc_config.js.
+  The scale and viewer controls only change the current view. The banner edited in place in
+  edit mode marks gc_config.js as unsaved; "Save changes" lists it when it changed.
+  Without gc_config.js the defaults apply; the banner of an older gc_specifications.js is taken
+  over. No more localStorage.
+
 Version 2.9
 - About: GNU GPL v3.0 license and link to the source code (github.com/M-M3on/GalleryCon).
 - Footer and About: "Share it, use it, improve it ~ m-m3on (Mikael Meon) ~ GPL v3".
@@ -25,6 +52,11 @@ Version 2.9
   --accent: #315efb;
   --accent-light: #edf1ff;
   --shadow: 0 8px 28px rgba(24,33,43,.07);
+  /* Technical specifications: green, to tell them from the categories (blue). */
+  --spec: #12805c;
+  --spec-hover: #0e6b4c;
+  --spec-light: #e6f5ee;
+  --spec-light-hover: #d2eee0;
 }
 * { box-sizing: border-box; }
 body {
@@ -187,11 +219,11 @@ h1 {
   text-align: center;
 }
 .unsaved-badge {
-  padding: 5px 11px;
+  padding: 7px 15px;
   border-radius: 999px;
   background: #fff4e5;
   color: #9a5b00;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 .unsaved-badge[hidden] { display: none; }
@@ -263,6 +295,97 @@ body.modal-open { overflow: hidden; }
 .button-danger { background: #d92d20; }
 .button-danger:hover { background: #feecec; color: #b42318; }
 .confirm-message { white-space: pre-line; }
+
+/* Settings */
+.settings-section { padding: 14px 0; border-top: 1px solid var(--line); }
+.settings-section h3 { margin: 0 0 10px; font-size: 15px; }
+.settings-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.settings-section-head h3 { margin: 0; }
+.settings-section-head button { padding: 7px 12px; font-size: 13px; }
+.settings-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+.settings-line .text-field { width: 110px; flex: none; padding: 7px 10px; }
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+.settings-check input { width: 17px; height: 17px; accent-color: var(--accent); }
+.settings-spec h3 { color: var(--spec); }
+.settings-criteria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2px 14px;
+  max-height: 230px;
+  overflow: auto;
+  margin-top: 8px;
+}
+.settings-criterion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.settings-criterion input { flex: none; width: 16px; height: 16px; accent-color: var(--spec); }
+.settings-criterion.is-missing { color: var(--muted); }
+.settings-banner { display: flex; gap: 8px; }
+.settings-banner input[type="color"] {
+  flex: none;
+  width: 46px;
+  height: 44px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+}
+.settings-advanced summary { cursor: pointer; font-size: 15px; font-weight: 700; }
+.settings-advanced[open] summary { margin-bottom: 8px; }
+.modal-footer .settings-reset { margin-right: auto; }
+
+/* Import: folders already in the gallery */
+.conflict-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.conflict-tools button { padding: 7px 12px; font-size: 13px; }
+.conflict-list {
+  display: grid;
+  gap: 6px;
+  max-height: 46vh;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.conflict-list label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  cursor: pointer;
+}
+.conflict-list label:hover { background: #f7f9fc; }
+.conflict-list input { flex: none; width: 17px; height: 17px; accent-color: var(--accent); }
+.conflict-list span { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.conflict-list small { display: block; color: var(--muted); font-size: 12px; }
 .field-label {
   display: block;
   margin-bottom: 6px;
@@ -541,47 +664,158 @@ footer {
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 22px;
-  flex-wrap: wrap;
+/* Top bar: follows the top of the window, full width.
+   Search, filter buttons, active filters, statistics and scale; the edit bar below in edit mode. */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: rgba(255,255,255,.96);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 4px 14px rgba(24,33,43,.05);
+  backdrop-filter: blur(6px);
 }
-#summary { color: var(--muted); }
+.top-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px max(22px, calc((100vw - 1440px)/2));
+}
 #search {
-  width: min(340px, 100%);
+  flex: 0 1 260px;
+  min-width: 150px;
   border: 1px solid var(--line);
   background: white;
-  padding: 11px 14px;
-  border-radius: 11px;
+  padding: 8px 12px;
+  border-radius: 10px;
   font: inherit;
+  font-size: 14px;
   outline: none;
 }
 #search:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(49,94,251,.1);
 }
-#toggleCards {
-  background: white;
-  color: var(--text);
-  border: 1px solid var(--line);
-}
-#toggleCards:hover { background: var(--accent-light); color: var(--accent); }
-.toolbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.scale-control {
+.top-filter-buttons { display: flex; gap: 6px; flex: none; }
+.top-filter-button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 7px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  font-size: 14px;
+}
+.top-filter-button[hidden] { display: none; }
+.top-filter-button:hover,
+.top-filter-button[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.top-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.top-count[hidden] { display: none; }
+.top-caret {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: .6;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform .15s;
+}
+.top-filter-button[aria-expanded="true"] .top-caret { transform: translateY(1px) rotate(-135deg); }
+.top-filter-button.is-spec .top-count { background: var(--spec); }
+.top-filter-button.is-spec:hover,
+.top-filter-button.is-spec[aria-expanded="true"] {
+  border-color: var(--spec);
+  background: var(--spec-light);
+  color: var(--spec);
+}
+/* Active filters: a strip stuck under the bar, shown when a filter is in use. */
+.active-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px max(22px, calc((100vw - 1440px)/2));
+  background: #f7f9fc;
+  border-top: 1px solid var(--line);
+}
+.active-strip[hidden] { display: none; }
+.active-filters {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.active-chip {
+  flex: none;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+.active-chip::after { content: " ×"; opacity: .7; }
+.active-chip:hover { background: #dfe6ff; color: var(--accent); }
+.active-chip small { color: #5c78d9; font-weight: 500; }
+.active-chip.is-spec { background: var(--spec-light); color: var(--spec); }
+.active-chip.is-spec:hover { background: var(--spec-light-hover); color: var(--spec-hover); }
+.active-chip.is-spec small { color: #3f9a78; }
+.active-chip.is-search { background: #eef0f3; color: var(--text); }
+.active-chip.is-search:hover { background: #e2e6ec; color: var(--text); }
+/* Number of images and folders left by the filters and the search. */
+.result-count {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.result-count strong { color: var(--text); }
+.active-clear {
+  flex: none;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.active-clear:hover { background: transparent; color: #b42318; text-decoration: underline; }
+.active-clear[hidden] { display: none; }
+.top-stats {
+  flex: none;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.scale-control {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: white;
 }
 .scale-label {
@@ -591,60 +825,86 @@ footer {
   padding: 0 3px;
 }
 .scale-control button {
-  min-width: 30px;
-  padding: 4px 8px;
+  min-width: 28px;
+  padding: 3px 8px;
   border-radius: 7px;
   background: var(--accent-light);
   color: var(--accent);
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.2;
 }
 .scale-control button:hover { background: var(--accent); color: white; }
 #scaleValue {
-  min-width: 48px;
+  min-width: 46px;
   text-align: center;
   color: var(--text);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-#filters {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 26px;
-}
-.filter-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 15px;
-  padding: 15px 17px;
+
+/* Filter panels: fixed under the top bar; the gallery stays visible and filters live. */
+.filter-popover {
+  position: fixed;
+  z-index: 16;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - var(--popover-top, 70px) - 16px);
+  overflow: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 3px 12px rgba(24,33,43,.025);
+  box-shadow: 0 18px 44px rgba(9,13,20,.18);
 }
+body.has-mention .filter-popover { max-height: calc(100vh - var(--popover-top, 70px) - 16px - var(--mention-height)); }
+.filter-popover-wide { width: min(640px, calc(100vw - 24px)); }
+.category-popover { border-top: 3px solid var(--accent); }
+.spec-popover { border-top: 3px solid var(--spec); }
+.spec-popover .popover-head strong { color: var(--spec); }
+.filter-popover[hidden] { display: none; }
+.popover-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 13px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.popover-head strong { font-size: 14px; }
+.popover-stats { color: var(--muted); font-size: 12px; }
+.filter-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 9px 13px;
+}
+.filter-row + .filter-row { border-top: 1px solid var(--line); }
 .filter-label {
-  flex: 0 0 125px;
-  padding-top: 7px;
-  font-size: 13px;
+  flex: 0 0 92px;
+  padding-top: 5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--muted);
+  line-height: 1.3;
 }
 .filter-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 .filter-chip {
-  padding: 7px 13px;
+  padding: 4px 11px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 8px;
   background: #f8f9fb;
   color: #45515e;
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.45;
   transition: all .15s;
 }
 .filter-chip:hover {
@@ -659,65 +919,72 @@ footer {
   color: white;
 }
 .filter-chip.all-chip { font-weight: 750; }
-.filter-summary {
-  margin: -12px 0 22px;
-  padding: 0 3px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.filter-summary strong { color: var(--text); }
-.filter-summary:empty { display: none; }
-#filterSummary:not(:empty) + #specSummary:not(:empty) { margin-top: -16px; }
-body.filters-hidden #specificationFilters { display: none !important; }
-#filters[hidden] { display: none !important; }
 
-/* Technical specification search */
-#specificationFilters {
-  margin: -8px 0 24px;
-  padding: 17px;
-  background: #ffffff;
-  background-image: none !important;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 3px 12px rgba(24,33,43,.025);
-}
-.spec-search-heading {
+/* Technical specification search (in its panel) */
+#specificationFilters[hidden] { display: none; }
+.spec-heading-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 13px;
 }
-.spec-search-heading h2 {
-  margin: 0;
-  font-size: 15px;
+.spec-heading-actions select {
+  max-width: 230px;
+  padding: 6px 8px;
+  border: 1px solid var(--spec);
+  border-radius: 8px;
+  background: var(--spec-light);
+  color: var(--spec);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
 }
-.spec-search-heading p {
-  margin: 3px 0 0;
+.spec-heading-actions select[hidden] { display: none; }
+.spec-heading-actions button { padding: 6px 10px; font-size: 12px; }
+.spec-secondary {
+  background: #f0f3f7;
+  color: var(--text);
+}
+.spec-info {
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  border-radius: 50%;
+  background: #f0f3f7;
+  color: var(--muted);
+}
+.spec-info[aria-expanded="true"] { background: var(--spec-light); color: var(--spec); }
+.spec-body { padding: 2px 13px 11px; }
+.spec-note {
+  margin: 9px 0 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f6f8fb;
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.5;
 }
-.spec-criteria {
-    background: transparent;
-    background-image: none !important;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-    gap: 10px;
-    width: 100%;
-}
-.spec-criterion {
-    display: grid;
-    align-items: center;
-    gap: 6px 10px;
-    min-width: 0;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-}
-.spec-criterion-label {
-  grid-column: 1 / -1;
+.spec-note[hidden] { display: none; }
+.spec-criteria { display: grid; width: 100%; }
+/* One line per criterion: name, target, tolerance, remove. */
+.spec-criterion,
+.spec-country {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 96px) minmax(0, 96px) 26px;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
-  overflow-wrap: anywhere;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.spec-country { grid-template-columns: minmax(0, 1fr) minmax(0, 224px); }
+.spec-criteria > :last-child { border-bottom: 0; }
+.spec-criterion-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 650;
 }
@@ -727,77 +994,73 @@ body.filters-hidden #specificationFilters { display: none !important; }
   font-size: 11px;
   font-weight: 400;
 }
-.spec-country {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  align-content: start;
+.spec-chips {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
-.spec-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .spec-chips:empty { display: none; }
 .spec-chip {
-  padding: 3px 9px;
+  padding: 2px 9px;
   border-radius: 999px;
-  background: var(--accent-light);
-  color: var(--accent);
+  background: var(--spec-light);
+  color: var(--spec);
   font-size: 12px;
 }
 .spec-chip::after { content: " ×"; }
-.spec-chip:hover { background: #dfe6ff; }
+.spec-chip:hover { background: var(--spec-light-hover); color: var(--spec-hover); }
 .spec-criterion input,
-.spec-country input,
-.spec-picker select {
+.spec-country input {
   width: 100%;
   min-width: 0;
-  padding: 8px 9px;
+  padding: 5px 7px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 7px;
   background: white;
   color: var(--text);
   font: inherit;
   font-size: 13px;
 }
+/* No spin buttons: they hid the placeholder of these narrow fields. */
+.spec-criterion input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.spec-criterion input[type="number"]::-webkit-inner-spin-button,
+.spec-criterion input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .spec-criterion input:focus,
-.spec-country input:focus,
-.spec-picker select:focus {
-  outline: 2px solid rgba(49,94,251,.18);
-  border-color: var(--accent);
+.spec-country input:focus {
+  outline: 2px solid rgba(18,128,92,.2);
+  border-color: var(--spec);
 }
 .spec-remove {
-  padding: 6px 10px;
-  background: #f0f3f7;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 7px;
+  background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 17px;
+  line-height: 1;
 }
 .spec-remove:hover { background: #feecec; color: #b42318; }
-.spec-actions {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  flex-wrap: wrap;
-  margin-top: 13px;
-}
-.spec-actions button { padding: 8px 12px; font-size: 12px; }
-.spec-secondary {
-  background: #f0f3f7;
-  color: var(--text);
-}
-.spec-picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-.spec-picker[hidden] { display: none; }
-.spec-picker select { width: min(420px, 100%); }
-.spec-note {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 11px;
+
+@media(max-width:900px) {
+  .top-stats { display: none; }
+  .scale-control { margin-left: auto; }
 }
 @media(max-width:700px) {
-  .spec-remove { justify-self: end; }
+  /* Two lines: search and scale, then filter buttons and active filters. */
+  .top-bar-row { flex-wrap: wrap; gap: 8px; padding: 8px 14px; }
+  #search { order: 1; flex: 1 1 160px; }
+  .scale-control { order: 2; }
+  .scale-label { display: none; }
+  .top-filter-buttons { order: 3; }
+  .active-strip { padding: 6px 14px; }
+  .filter-popover, .filter-popover-wide { left: 12px !important; width: calc(100vw - 24px); }
+  .filter-row { flex-direction: column; gap: 5px; }
+  .filter-label { flex: auto; padding-top: 0; }
+  .spec-criterion { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 26px; }
+  .spec-criterion .spec-criterion-label { grid-column: 1 / -1; }
+  .spec-country { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Gallery */
@@ -1096,6 +1359,30 @@ body.filters-hidden #specificationFilters { display: none !important; }
 .viewer-thumb:hover { background: rgba(255,255,255,.14); opacity: 1; }
 .viewer-thumb.active { border-color: #9db8ff; opacity: 1; }
 .viewer-thumb img { width: 100%; height: 100%; object-fit: cover; }
+/* Thumbnail not loaded yet: shimmer and small spinner, until the image is decoded. */
+@keyframes gallerycon-spin { to { transform: rotate(360deg); } }
+.viewer-thumb.is-loading {
+  background: linear-gradient(90deg, rgba(255,255,255,.06) 30%, rgba(255,255,255,.2) 50%, rgba(255,255,255,.06) 70%);
+  background-size: 200% 100%;
+  animation: gallerycon-shimmer 1.3s linear infinite;
+}
+.viewer-thumb.is-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.25);
+  border-top-color: #c7d5ff;
+  border-radius: 50%;
+  animation: gallerycon-spin .8s linear infinite;
+}
+.viewer-thumb.is-missing::after {
+  content: '!';
+  position: absolute;
+  color: rgba(255,255,255,.55);
+  font-size: 16px;
+  font-weight: 700;
+}
 .viewer-thumb-add {
   border: 2px dashed rgba(157,184,255,.5);
   background: transparent;
@@ -1213,6 +1500,12 @@ body.filters-hidden #specificationFilters { display: none !important; }
   margin-bottom: 8px;
 }
 .spec-edit-head strong { color: #dce5ff; font-size: 12px; }
+.spec-editor .spec-edit-head .spec-edit-group-name {
+  flex: 1;
+  font-weight: 650;
+  color: #dce5ff;
+}
+.spec-edit-head .spec-edit-remove { flex: none; }
 .spec-editor input {
   width: 100%;
   min-width: 0;
@@ -1300,32 +1593,36 @@ body.filters-hidden #specificationFilters { display: none !important; }
 
 /* Edit mode */
 .edit-badge {
-  padding: 5px 11px;
+  padding: 7px 15px;
   border-radius: 999px;
   background: #edf1ff;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 .edit-badge:hover { background: #dfe6ff; color: var(--accent); }
 .edit-badge[hidden] { display: none; }
 .edit-badge::after { content: " ×"; opacity: .7; }
 .edit-bar {
-  position: sticky;
-  top: 10px;
-  z-index: 6;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin: -8px 0 22px;
-  padding: 11px 14px;
-  background: var(--surface);
-  border: 1px solid var(--accent);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+  padding: 7px max(22px, calc((100vw - 1440px)/2));
+  background: #f4f7ff;
+  border-top: 2px solid var(--accent);
 }
+.edit-bar-title {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.edit-bar-actions { margin-left: auto; }
 .edit-bar[hidden] { display: none; }
 #editSelectionCount { font-size: 13px; font-weight: 650; }
 .edit-bar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1417,8 +1714,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
   .viewer-nav { width: 36px; height: 50px; font-size: 28px; }
   .viewer-actions button { padding: 7px 10px; }
   .spec-edit-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .toolbar-controls { width: 100%; justify-content: space-between; }
-  .filter-row { flex-direction: column; gap: 9px; }
+  .filter-row { flex-direction: column; gap: 5px; }
   .filter-label { flex: auto; padding-top: 0; }
 }
 </style>
@@ -1453,21 +1749,76 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
   </div>
 </header>
 
-<main>
-  <div class="toolbar">
-    <div id="summary">Open the Menu to add a folder.</div>
-    <input id="search" type="search" placeholder="Search for a category or image..." hidden>
-    <div class="toolbar-controls">
-      <div class="scale-control" role="group" aria-label="Gallery card size">
-        <span class="scale-label">Scale</span>
-        <button id="scaleDown" type="button" aria-label="Make gallery cards smaller" title="Make cards smaller">−</button>
-        <span id="scaleValue" aria-live="polite">320 px</span>
-        <button id="scaleUp" type="button" aria-label="Make gallery cards larger" title="Make cards larger">+</button>
-      </div>
-      <button id="toggleCards" type="button">Hide filters</button>
+<div id="topBar" class="top-bar">
+  <div class="top-bar-row">
+    <input id="search" type="search" placeholder="Search a folder or category…" aria-label="Search" hidden>
+    <div class="top-filter-buttons">
+      <button id="categoriesButton" class="top-filter-button" type="button"
+              aria-haspopup="dialog" aria-expanded="false" aria-controls="categoryPanel" hidden>
+        Categories<span id="categoriesCount" class="top-count" hidden></span><span class="top-caret" aria-hidden="true"></span>
+      </button>
+      <button id="specificationsButton" class="top-filter-button is-spec" type="button"
+              aria-haspopup="dialog" aria-expanded="false" aria-controls="specPanel" hidden>
+        Specifications<span id="specificationCount" class="top-count" hidden></span><span class="top-caret" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div id="summary" class="top-stats">Open the Menu to add a folder.</div>
+    <div class="scale-control" role="group" aria-label="Gallery card size">
+      <span class="scale-label">Scale</span>
+      <button id="scaleDown" type="button" aria-label="Make gallery cards smaller" title="Make cards smaller">−</button>
+      <span id="scaleValue" aria-live="polite">320 px</span>
+      <button id="scaleUp" type="button" aria-label="Make gallery cards larger" title="Make cards larger">+</button>
     </div>
   </div>
 
+  <div id="editBar" class="edit-bar" hidden>
+    <span class="edit-bar-title">Edit mode</span>
+    <span id="editSelectionCount">No folder selected</span>
+    <div class="edit-bar-actions">
+      <button id="editSelectShown" class="button-secondary" type="button">Select all shown</button>
+      <button id="editClearSelection" class="button-secondary" type="button">Clear selection</button>
+      <button id="editRename" class="button-secondary" type="button" disabled>Rename</button>
+      <button id="editChangeCategory" class="button-secondary" type="button" disabled>Change category</button>
+      <button id="editDeleteSelected" class="button-danger" type="button" disabled>Delete</button>
+    </div>
+  </div>
+
+  <!-- Active filters, stuck under the bar: blue for categories, green for specifications. -->
+  <div id="activeFilterStrip" class="active-strip" hidden>
+    <div id="activeFilters" class="active-filters" aria-label="Active filters"></div>
+    <span id="resultCount" class="result-count" aria-live="polite"></span>
+    <button id="clearAllFilters" class="active-clear" type="button" hidden>Clear all</button>
+  </div>
+</div>
+
+<!-- Filter panels: fixed under the top bar, closed by a click outside or Escape. -->
+<div id="categoryPanel" class="filter-popover category-popover" role="dialog" aria-label="Categories" hidden>
+  <div class="popover-head">
+    <strong>Categories</strong>
+    <span id="categoryPanelStats" class="popover-stats"></span>
+  </div>
+  <section id="filters"></section>
+</div>
+
+<div id="specPanel" class="filter-popover filter-popover-wide spec-popover" role="dialog" aria-label="Technical specifications" hidden>
+  <section id="specificationFilters" hidden>
+    <div class="popover-head">
+      <strong>Technical specifications</strong>
+      <div class="spec-heading-actions">
+        <select id="specificationSelect" aria-label="Add a search criterion"></select>
+        <button id="clearSpecifications" class="spec-secondary" type="button" title="Empty every value and country">Clear</button>
+        <button id="specificationInfo" class="spec-info" type="button" aria-expanded="false"
+                aria-controls="specificationNote" aria-label="How the search works" title="How the search works">?</button>
+      </div>
+    </div>
+    <div class="spec-body">
+      <p id="specificationNote" class="spec-note" hidden></p>
+      <div id="specificationCriteria" class="spec-criteria"></div>
+    </div>
+  </section>
+</div>
+
+<main>
   <section id="errorCard" hidden aria-live="polite">
     <div class="error-card-head">
       <strong id="errorCardTitle">Errors</strong>
@@ -1476,39 +1827,6 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
     <ul id="errorList" class="error-list"></ul>
   </section>
 
-  <div id="editBar" class="edit-bar" hidden>
-    <span id="editSelectionCount">No folder selected</span>
-    <div class="edit-bar-actions">
-      <button id="editSelectShown" class="button-secondary" type="button">Select all shown</button>
-      <button id="editClearSelection" class="button-secondary" type="button">Clear selection</button>
-      <button id="editChangeCategory" class="button-secondary" type="button" disabled>Change category</button>
-      <button id="editDeleteSelected" class="button-danger" type="button" disabled>Delete</button>
-    </div>
-  </div>
-
-  <section id="filters"></section>
-  <section id="specificationFilters" hidden aria-label="Technical specification search">
-    <div class="spec-search-heading">
-      <div>
-        <h2>Technical specifications</h2>
-        <p>Search numerical properties (lengths in metres) with a target value and a tolerance, or filter by country.</p>
-      </div>
-    </div>
-    <div id="specificationCriteria" class="spec-criteria"></div>
-    <div class="spec-actions">
-      <button id="addSpecification" type="button">+ Add specification</button>
-      <button id="clearSpecifications" class="spec-secondary" type="button">Clear values</button>
-    </div>
-    <div id="specificationPicker" class="spec-picker" hidden>
-      <select id="specificationSelect" aria-label="Choose a specification"></select>
-      <button id="confirmSpecification" type="button">Add</button>
-      <button id="cancelSpecification" class="spec-secondary" type="button">Cancel</button>
-    </div>
-    <p id="specificationNote" class="spec-note"></p>
-  </section>
-
-  <div id="filterSummary" class="filter-summary"></div>
-  <div id="specSummary" class="filter-summary"></div>
   <section id="gallery">
     <div class="empty">
       <strong>The gallery is empty</strong>
@@ -1583,6 +1901,10 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
         <p>Select and delete folders, edit specifications in the image viewer, and write the bottom banner.</p>
       </div>
       <div class="menu-item">
+        <button id="menuSettings" class="button-secondary" type="button">Settings</button>
+        <p>Display, specification criteria, bottom banner and data files, saved in gc_config.js.</p>
+      </div>
+      <div class="menu-item">
         <button id="menuSave" type="button">Save changes</button>
         <p id="menuSaveDescription">Lists the modified files to download into the data folder.</p>
       </div>
@@ -1604,7 +1926,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
         <span class="help-step-number">1</span>
         <div>
           <strong>Import a folder</strong>
-          <p>Menu → Add or Replace. Each folder with images becomes a card; its parent folders become categories.</p>
+          <p>Menu → Add or Replace. Each folder with images becomes a card; its parent folders become categories. When adding, a folder already in the gallery (same categories and same name) is merged only if you choose so.</p>
         </div>
       </li>
       <li class="help-step">
@@ -1618,21 +1940,21 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
         <span class="help-step-number">3</span>
         <div>
           <strong>Browse</strong>
-          <p>Filter by category, search by name or by specification. Click an image to enlarge it.</p>
+          <p>Use the bar at the top: search, then Categories and Specifications to filter (a click outside closes them). Active filters show as chips: click one to remove it. Click an image to enlarge it.</p>
         </div>
       </li>
       <li class="help-step">
         <span class="help-step-number">4</span>
         <div>
           <strong>Edit</strong>
-          <p>Menu → Edit mode. Tick cards to delete them or change their category. In the image viewer, add or delete images and edit the specifications. Type a text in the bottom banner (and pick its color) to show it on every page; leave it empty to remove it.</p>
+          <p>Menu → Edit mode. Tick cards to delete them, rename them or change their category. In the image viewer, add or delete images, rename the folder and edit the specifications (with your own groups of name / value lines). Type a text in the bottom banner (and pick its color) to show it on every page; leave it empty to remove it.</p>
         </div>
       </li>
       <li class="help-step">
         <span class="help-step-number">5</span>
         <div>
           <strong>Save</strong>
-          <p>Menu → Save changes. Download the listed files and copy them into the <code>data</code> folder.</p>
+          <p>Menu → Save changes. Download the listed files and copy them into the <code>data</code> folder. Menu → Settings gathers the display at opening, the specification criteria shown at opening, the bottom banner and the data file sizes: Save settings downloads <code>gc_config.js</code>.</p>
         </div>
       </li>
       <li class="help-step">
@@ -1647,6 +1969,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
       <pre class="help-tree">GalleryCon/
 ├── GalleryCon.html
 └── data/
+    ├── gc_config.js
     ├── gc_specifications.js
     ├── gc_covers-01.js
     └── gc_images-01.js</pre>
@@ -1669,11 +1992,15 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
     { "name": "Width", "value": "3.71", "units": "m" },
     { "name": "Weight, Combat", "value": "56.5", "units": "t" }
   ],
-  "odinUrl": "https://…"
+  "odinUrl": "https://…",
+  "Armament": [
+    { "name": "Main gun", "value": "120", "units": "mm" }
+  ]
 }</pre>
       <ul class="help-notes">
         <li><code>origin</code> and <code>proliferation</code>: countries for the filters.</li>
         <li><code>dimensions</code>: one line per value, with <code>name</code>, <code>value</code> and <code>units</code>.</li>
+        <li>Any other key with such lines (<code>Armament</code>) is a custom group, also created in edit mode with “+ Custom group”.</li>
         <li>Values are text: <code>"9.87"</code>, <code>"25 cm"</code>. <code>"INA"</code> or ranges are shown but not searchable.</li>
         <li>Lengths need a unit (mm, cm, m, km, in, ft, yd) to be searchable.</li>
         <li>Edited by hand? Use Replace with a folder: Add keeps the specifications already in the gallery.</li>
@@ -1753,6 +2080,100 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
   </div>
 </div>
 
+<div id="renameModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="renameTitle">
+  <div class="modal">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="renameTitle">Rename the folder</h2>
+    <p id="renameModalTarget" class="modal-intro"></p>
+    <label class="field-label" for="renameInput">Name</label>
+    <input id="renameInput" class="text-field" type="text" autocomplete="off" placeholder="Leclerc">
+    <p class="field-hint">Only the name shown in the gallery changes: your source folder is not modified.</p>
+    <p id="renameError" class="field-error" hidden></p>
+    <div class="modal-footer">
+      <button class="button-secondary" type="button" data-close>Cancel</button>
+      <button id="renameSave" type="button">Rename</button>
+    </div>
+  </div>
+</div>
+
+<div id="importConflictModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="importConflictTitle">
+  <div class="modal modal-wide">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="importConflictTitle">Folders already in the gallery</h2>
+    <p id="importConflictIntro" class="modal-intro"></p>
+    <div class="conflict-tools">
+      <button id="importConflictAll" class="button-secondary" type="button">Merge all</button>
+      <button id="importConflictNone" class="button-secondary" type="button">Merge none</button>
+    </div>
+    <ul id="importConflictList" class="conflict-list"></ul>
+    <p class="field-hint">A merged folder receives the images it does not have yet (same file name = same image) and keeps its own specifications. A folder that is not merged stays unchanged: its images are not imported.</p>
+    <div class="modal-footer">
+      <button class="button-secondary" type="button" data-close>Cancel import</button>
+      <button id="importConflictOk" type="button">Import</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="modal modal-wide">
+    <button class="modal-close" type="button" data-close aria-label="Close">×</button>
+    <h2 id="settingsTitle">Settings</h2>
+    <p class="modal-intro">Saved in <code>gc_config.js</code>: copy the downloaded file into the <code>data</code> folder next to GalleryCon.html. Without it, the default settings apply.</p>
+
+    <section class="settings-section">
+      <div class="settings-section-head">
+        <h3>Display</h3>
+        <button id="settingsUseView" class="button-secondary" type="button"
+                title="Card size, viewer options and specification criteria as they are now">Use the current view</button>
+      </div>
+      <label class="settings-line">
+        <span>Card size (260 to 560 px)</span>
+        <input id="settingsCardWidth" class="text-field" type="number" min="260" max="560" step="20">
+      </label>
+      <label class="settings-check"><input id="settingsFit" type="checkbox"> Viewer: fit images to the window</label>
+      <label class="settings-check"><input id="settingsShowSpecs" type="checkbox"> Viewer: show the specifications panel</label>
+    </section>
+
+    <section class="settings-section settings-spec">
+      <h3>Specification search</h3>
+      <p class="field-hint">Criteria shown when the gallery opens, the ones added by hand included. Only the list is saved, never the values typed.</p>
+      <div id="settingsCriteria" class="settings-criteria"></div>
+    </section>
+
+    <section class="settings-section">
+      <h3>Bottom banner</h3>
+      <div class="settings-banner">
+        <input id="settingsBannerText" class="text-field" type="text" maxlength="200" autocomplete="off"
+               placeholder="Empty: no banner" aria-label="Bottom banner text">
+        <input id="settingsBannerColor" type="color" aria-label="Bottom banner text color" title="Text color">
+      </div>
+    </section>
+
+    <details class="settings-section settings-advanced">
+      <summary>Advanced: data files</summary>
+      <label class="settings-line">
+        <span>Maximum size of a <code>gc_covers-NN.js</code> file (MB)</span>
+        <input id="settingsCoversMb" class="text-field" type="number" min="1" step="1">
+      </label>
+      <label class="settings-line">
+        <span>Maximum size of a <code>gc_images-NN.js</code> file (MB)</span>
+        <input id="settingsImagesMb" class="text-field" type="number" min="1" step="1">
+      </label>
+      <label class="settings-line">
+        <span>Standalone export: warning above (MB)</span>
+        <input id="settingsWarningMb" class="text-field" type="number" min="1" step="1">
+      </label>
+    </details>
+
+    <p id="settingsError" class="field-error" hidden></p>
+    <div class="modal-footer">
+      <button id="settingsReset" class="button-secondary settings-reset" type="button">Default settings</button>
+      <button class="button-secondary" type="button" data-close>Cancel</button>
+      <button id="settingsSave" type="button">Save settings</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirmModal" class="modal-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
   <div class="modal">
     <button class="modal-close" type="button" data-close aria-label="Close">×</button>
@@ -1767,13 +2188,14 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
 
 <script>
 // Single place to bump the version (also add an entry to the CHANGELOG at the top of the file).
-window.APP_VERSION = '2.9';
+window.APP_VERSION = '3.0';
 document.querySelectorAll('.app-version').forEach(element => {
   element.textContent = `v${window.APP_VERSION}`;
 });
 document.querySelectorAll('.app-version-number').forEach(element => {
   element.textContent = window.APP_VERSION;
 });
+// Default settings, used when data/gc_config.js is missing (Menu → Settings writes it).
 window.GALLERY_CARD_DEFAULT_WIDTH = 260;
 window.MODAL_FIT_TO_WINDOW_DEFAULT = false;
 
@@ -1792,13 +2214,25 @@ window.STANDALONE_WARNING_MB = 50;
   const summary = document.getElementById('summary');
   const search = document.getElementById('search');
   const filtersContainer = document.getElementById('filters');
-  const filterSummary = document.getElementById('filterSummary');
+  const topBar = document.getElementById('topBar');
+  const activeFilters = document.getElementById('activeFilters');
+  const clearAllFilters = document.getElementById('clearAllFilters');
+  const activeFilterStrip = document.getElementById('activeFilterStrip');
+  const resultCount = document.getElementById('resultCount');
+  const topBarRow = topBar.querySelector('.top-bar-row');
+  const categoriesButton = document.getElementById('categoriesButton');
+  const categoriesCount = document.getElementById('categoriesCount');
+  const specificationsButton = document.getElementById('specificationsButton');
+  const categoryPanel = document.getElementById('categoryPanel');
+  const categoryPanelStats = document.getElementById('categoryPanelStats');
+  const specPanel = document.getElementById('specPanel');
   const specificationFilters = document.getElementById('specificationFilters');
   const specificationCriteria = document.getElementById('specificationCriteria');
   const specificationSelect = document.getElementById('specificationSelect');
-  const specificationPicker = document.getElementById('specificationPicker');
   const specificationNote = document.getElementById('specificationNote');
-  const specificationSummary = document.getElementById('specSummary');
+  const specificationInfo = document.getElementById('specificationInfo');
+  const specificationCount = document.getElementById('specificationCount');
+  const clearSpecifications = document.getElementById('clearSpecifications');
 
   const viewer = document.getElementById('viewer');
   const viewerStage = document.getElementById('viewerStage');
@@ -1819,25 +2253,91 @@ window.STANDALONE_WARNING_MB = 50;
   const saveStatus = document.getElementById('saveStatus');
 
   const imageExt = /\.(avif|bmp|gif|jpe?g|png|svg|webp|tiff?)$/i;
-  const toggleCards = document.getElementById('toggleCards');
   const scaleDown = document.getElementById('scaleDown');
   const scaleUp = document.getElementById('scaleUp');
   const scaleValue = document.getElementById('scaleValue');
 
-  let galleryCardWidth = Number(window.GALLERY_CARD_DEFAULT_WIDTH) || 320;
+  /* ----------------------------------------
+     SHARED HELPERS
+  ---------------------------------------- */
+
+  // Creates an element in one call:
+  //   el('button', { type: 'button', class: 'x', text: 'OK', attrs: { 'aria-label': '…' },
+  //                  dataset: { key: 'a' }, on: { click: fn } }, child1, child2)
+  // `class`, `text`, `attrs`, `dataset` and `on` are special; any other key is set as a
+  // property (type, title, value, checked, placeholder...). Empty values are skipped.
+  function el(tag, props = {}, ...children) {
+    const element = document.createElement(tag);
+    Object.entries(props).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === false) return;
+      if (key === 'class') element.className = value;
+      else if (key === 'text') element.textContent = value;
+      else if (key === 'attrs') {
+        Object.entries(value).forEach(([name, attr]) => element.setAttribute(name, attr));
+      } else if (key === 'dataset') Object.assign(element.dataset, value);
+      else if (key === 'on') {
+        Object.entries(value).forEach(([type, handler]) => element.addEventListener(type, handler));
+      } else element[key] = value;
+    });
+    element.append(...children.filter(child => child !== null && child !== undefined && child !== false));
+    return element;
+  }
+
+  // <button type="button">: `text` comes first, the children (if any) after it.
+  function makeButton(text, className, onClick, props = {}, ...children) {
+    return el('button', { type: 'button', class: className, text, on: onClick ? { click: onClick } : null, ...props },
+      ...children);
+  }
+
+  // "1 image", "3 images".
+  function plural(count, word) {
+    return `${count} ${word}${count !== 1 ? 's' : ''}`;
+  }
+
+  // Natural order, case and accents ignored ("Tank 2" before "tank 10").
+  const textCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+  const compareText = (a, b) => textCollator.compare(a, b);
+
+  // Enter in a field runs the action instead of submitting anything.
+  function onEnter(field, action) {
+    field.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      action();
+    });
+  }
+
+  function showFieldError(element, message) {
+    element.textContent = message;
+    element.hidden = false;
+  }
+
+  function fillDatalist(datalist, values) {
+    datalist.replaceChildren(...values.map(value => el('option', { value })));
+    return datalist;
+  }
+
+  // Card size (top bar scale and Settings).
+  const CARD_WIDTH_MIN = 260;
+  const CARD_WIDTH_MAX = 560;
+  const CARD_WIDTH_STEP = 40;
+  const clampCardWidth = width => Math.min(CARD_WIDTH_MAX, Math.max(CARD_WIDTH_MIN, Math.round(width)));
+
+  const DEFAULT_CARD_WIDTH = clampCardWidth(Number(window.GALLERY_CARD_DEFAULT_WIDTH) || CARD_WIDTH_MIN);
+  let galleryCardWidth = DEFAULT_CARD_WIDTH;
 
   function applyGalleryCardWidth() {
     document.documentElement.style.setProperty('--gallery-card-min-width', `${galleryCardWidth}px`);
     scaleValue.textContent = `${galleryCardWidth} px`;
-    scaleDown.disabled = galleryCardWidth <= 260;
-    scaleUp.disabled = galleryCardWidth >= 560;
+    scaleDown.disabled = galleryCardWidth <= CARD_WIDTH_MIN;
+    scaleUp.disabled = galleryCardWidth >= CARD_WIDTH_MAX;
   }
   scaleDown.addEventListener('click', () => {
-    galleryCardWidth = Math.max(260, galleryCardWidth - 40);
+    galleryCardWidth = clampCardWidth(galleryCardWidth - CARD_WIDTH_STEP);
     applyGalleryCardWidth();
   });
   scaleUp.addEventListener('click', () => {
-    galleryCardWidth = Math.min(560, galleryCardWidth + 40);
+    galleryCardWidth = clampCardWidth(galleryCardWidth + CARD_WIDTH_STEP);
     applyGalleryCardWidth();
   });
   applyGalleryCardWidth();
@@ -1847,33 +2347,12 @@ window.STANDALONE_WARNING_MB = 50;
   let viewerGroup = null;
   let viewerIndex = 0;
 
-  // localStorage may be unavailable in private or restricted browsing contexts.
-  // The key is versioned: a value saved by an earlier version must not override the default.
-  const FIT_MODE_KEY = 'galleryFitModeV2';
-  let savedFitMode = null;
-  try {
-    savedFitMode = localStorage.getItem(FIT_MODE_KEY);
-  } catch (error) {
-    console.warn('Could not read the fit mode from localStorage:', error);
-  }
-
-  // State of the "Hide / Show specifications" button in the preview modal (expanded by default).
-  // Versioned key: a choice saved by an earlier version must not hide the panel by default.
-  const SPECIFICATIONS_COLLAPSED_KEY = 'gallerySpecificationsCollapsedV2';
+  // Current view of the viewer (its value at opening comes from the settings, see CONFIGURATION).
+  let fitMode = Boolean(window.MODAL_FIT_TO_WINDOW_DEFAULT);
   let specificationsCollapsed = false;
-  try {
-    specificationsCollapsed = localStorage.getItem(SPECIFICATIONS_COLLAPSED_KEY) === 'true';
-  } catch (error) {
-    console.warn('Could not read the specifications state from localStorage:', error);
-  }
-
-  let fitMode = savedFitMode === null
-    ? Boolean(window.MODAL_FIT_TO_WINDOW_DEFAULT)
-    : savedFitMode === 'true';
 
   let selections = [];
   let maxDepth = 0;
-  let cardsHidden = false;
 
   // Numerical specification search state.
   const DEFAULT_SPEC_PATHS = [
@@ -1885,11 +2364,296 @@ window.STANDALONE_WARNING_MB = 50;
   let activeSpecificationPaths = new Set();
   let specificationValues = {};
 
-  toggleCards.addEventListener('click', () => {
-    cardsHidden = !cardsHidden;
-    filtersContainer.hidden = cardsHidden;
-    document.body.classList.toggle('filters-hidden', cardsHidden);
-    toggleCards.textContent = cardsHidden ? 'Show filters' : 'Hide filters';
+  /* ----------------------------------------
+     CONFIGURATION (data/gc_config.js)
+     Every setting of the gallery in one small file, apart from the folder data:
+     display at opening, specification criteria shown at opening, bottom banner, data file sizes.
+     Changed in Menu → Settings ("Save settings" downloads the file) or, for the banner, in place
+     in edit mode. The scale, "Fit to window" and "Hide specifications" controls only change the
+     current view. Without gc_config.js, the defaults below apply.
+  ---------------------------------------- */
+
+  const CONFIG_FORMAT = 1;
+  const MENTION_DEFAULT_COLOR = '#18212b';
+  let configFromFile = false; // data/gc_config.js was found
+
+  function positiveNumber(value, fallback) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? number : fallback;
+  }
+
+  function defaultConfig() {
+    return {
+      display: {
+        cardWidth: DEFAULT_CARD_WIDTH,
+        fitToWindow: Boolean(window.MODAL_FIT_TO_WINDOW_DEFAULT),
+        showSpecifications: true
+      },
+      search: { criteria: DEFAULT_SPEC_PATHS.slice() },
+      banner: { text: '', color: MENTION_DEFAULT_COLOR },
+      files: {
+        coversMaxMb: positiveNumber(window.COVERS_FILE_MAX_MB, 10),
+        imagesMaxMb: positiveNumber(window.IMAGES_FILE_MAX_MB, 70),
+        standaloneWarningMb: positiveNumber(window.STANDALONE_WARNING_MB, 50)
+      }
+    };
+  }
+
+  // Complete and valid configuration from any object (a value missing or wrong takes its default).
+  function normalizeConfig(raw) {
+    const base = defaultConfig();
+    const source = isPlainObject(raw) ? raw : {};
+    const display = isPlainObject(source.display) ? source.display : {};
+    const search = isPlainObject(source.search) ? source.search : {};
+    const banner = isPlainObject(source.banner) ? source.banner : {};
+    const files = isPlainObject(source.files) ? source.files : {};
+    const width = Number(display.cardWidth);
+
+    return {
+      display: {
+        cardWidth: Number.isFinite(width) && width > 0
+          ? clampCardWidth(width)
+          : base.display.cardWidth,
+        fitToWindow: typeof display.fitToWindow === 'boolean' ? display.fitToWindow : base.display.fitToWindow,
+        showSpecifications: typeof display.showSpecifications === 'boolean'
+          ? display.showSpecifications
+          : base.display.showSpecifications
+      },
+      search: {
+        criteria: Array.isArray(search.criteria)
+          ? Array.from(new Set(search.criteria.filter(path => typeof path === 'string' && path.trim())))
+          : base.search.criteria
+      },
+      banner: {
+        text: typeof banner.text === 'string' ? banner.text.slice(0, 200) : '',
+        color: /^#[0-9a-f]{6}$/i.test(banner.color || '') ? banner.color.toLowerCase() : MENTION_DEFAULT_COLOR
+      },
+      files: {
+        coversMaxMb: positiveNumber(files.coversMaxMb, base.files.coversMaxMb),
+        imagesMaxMb: positiveNumber(files.imagesMaxMb, base.files.imagesMaxMb),
+        standaloneWarningMb: positiveNumber(files.standaloneWarningMb, base.files.standaloneWarningMb)
+      }
+    };
+  }
+
+  let config = defaultConfig();
+
+  function serializeConfig() {
+    return {
+      format: CONFIG_FORMAT,
+      display: { ...config.display },
+      search: { criteria: config.search.criteria.slice() },
+      banner: { text: config.banner.text.trim(), color: config.banner.color },
+      files: { ...config.files }
+    };
+  }
+
+  function configJson() {
+    return JSON.stringify(serializeConfig());
+  }
+
+  let savedConfigJson = configJson(); // what data/gc_config.js holds
+
+  function isConfigDirty() {
+    return configJson() !== savedConfigJson;
+  }
+
+  function buildConfigBlob() {
+    return new Blob([
+      '// GalleryCon settings: copy this file into the data folder next to GalleryCon.html.\n',
+      'window.GALLERYCON_CONFIG = ',
+      JSON.stringify(serializeConfig(), null, 2),
+      ';\n'
+    ], { type: 'text/javascript;charset=utf-8' });
+  }
+
+  // Makes a configuration the current one: the view goes back to its display settings.
+  function applyConfig(next) {
+    config = next;
+    galleryCardWidth = config.display.cardWidth;
+    fitMode = config.display.fitToWindow;
+    specificationsCollapsed = !config.display.showSpecifications;
+    applyGalleryCardWidth();
+    mention = { text: config.banner.text, color: config.banner.color };
+    updateMentionBanner();
+  }
+
+  // Shows the configured criteria in the specification search (values already typed are kept).
+  function applyConfiguredCriteria() {
+    const previousValues = specificationValues;
+    activeSpecificationPaths = new Set(
+      config.search.criteria.filter(path => availableSpecifications.has(path))
+    );
+    specificationValues = {};
+    activeSpecificationPaths.forEach(path => {
+      specificationValues[path] = previousValues[path] || { value: '', tolerance: '' };
+    });
+    renderSpecificationFilters();
+    renderGallery();
+  }
+
+  /* ----------------------------------------
+     FILTER PANELS (Categories, Specifications)
+     Fixed under the top bar, one at a time. They stay open while choosing (several values can
+     be picked) and close with a click outside, Escape or their button.
+  ---------------------------------------- */
+
+  const filterPanels = [
+    { panel: categoryPanel, button: categoriesButton },
+    { panel: specPanel, button: specificationsButton }
+  ];
+  let openPanel = null;
+
+  function positionFilterPanel() {
+    if (!openPanel) return;
+    const { panel, button } = openPanel;
+    // Under the first line of the bar: over the active filters and the edit bar.
+    const top = Math.max(0, topBarRow.getBoundingClientRect().bottom) + 4;
+    document.documentElement.style.setProperty('--popover-top', `${top}px`);
+    panel.style.top = `${top}px`;
+    const left = Math.min(button.getBoundingClientRect().left, window.innerWidth - panel.offsetWidth - 12);
+    panel.style.left = `${Math.max(12, left)}px`;
+  }
+
+  function openFilterPanel(entry) {
+    closeFilterPanel();
+    openPanel = entry;
+    entry.panel.hidden = false;
+    entry.button.setAttribute('aria-expanded', 'true');
+    positionFilterPanel();
+  }
+
+  function closeFilterPanel() {
+    if (!openPanel) return;
+    openPanel.panel.hidden = true;
+    openPanel.button.setAttribute('aria-expanded', 'false');
+    openPanel = null;
+  }
+
+  filterPanels.forEach(entry => {
+    entry.button.addEventListener('click', () => {
+      if (openPanel === entry) closeFilterPanel();
+      else openFilterPanel(entry);
+    });
+  });
+
+  // A click outside closes the panel; the active filters of the top bar and the windows
+  // (confirmation...) are not "outside".
+  document.addEventListener('pointerdown', event => {
+    if (!openPanel) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (openPanel.panel.contains(target) || openPanel.button.contains(target)) return;
+    if (target.closest('#activeFilters, #clearAllFilters, .modal-backdrop')) return;
+    closeFilterPanel();
+  }, true);
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !openPanel || document.querySelector('.modal-backdrop.open')) return;
+    const button = openPanel.button;
+    closeFilterPanel();
+    button.focus();
+  });
+
+  let panelFrame = 0;
+  const schedulePanelPosition = () => {
+    if (!openPanel) return;
+    cancelAnimationFrame(panelFrame);
+    panelFrame = requestAnimationFrame(positionFilterPanel);
+  };
+  window.addEventListener('scroll', schedulePanelPosition, { passive: true });
+  window.addEventListener('resize', schedulePanelPosition);
+
+  // Hides a filter button with nothing to show, and its panel with it.
+  function setFilterButtonAvailable(button, available) {
+    button.hidden = !available;
+    if (!available && openPanel && openPanel.button === button) closeFilterPanel();
+  }
+
+  /* Active filters of the top bar: one chip per category, value and country, removed with a click. */
+  function renderActiveFilters() {
+    activeFilters.replaceChildren();
+
+    const addChip = (text, detail, label, onRemove, kind = '') => {
+      activeFilters.append(makeButton(text, kind ? `active-chip is-${kind}` : 'active-chip', onRemove, {
+        title: `${label} (click to remove)`,
+        attrs: { 'aria-label': `Remove the filter ${label}` }
+      }, detail ? el('small', { text: ` ${detail}` }) : null));
+    };
+
+    const term = search.value.trim();
+    if (term) {
+      addChip(`“${term}”`, '', `Search: ${term}`, () => {
+        search.value = '';
+        renderActiveFilters();
+        renderGallery();
+      }, 'search');
+    }
+
+    let categoryCount = 0;
+    for (let level = 0; level < maxDepth; level++) {
+      const levelLabel = level === 0 ? 'Category' : `Subcategory ${level}`;
+      selectedAt(level).forEach(value => {
+        categoryCount++;
+        addChip(value, '', `${levelLabel}: ${value}`, () => toggleSelection(level, value));
+      });
+    }
+
+    let specificationCountValue = 0;
+    Array.from(activeSpecificationPaths).forEach(path => {
+      const criterion = specificationValues[path];
+      if (!criterion || criterion.value === '') return;
+      specificationCountValue++;
+      const unit = getPropertyUnit(path);
+      const tolerance = criterion.tolerance === '' ? '' : ` ± ${criterion.tolerance}`;
+      const detail = `${criterion.value}${tolerance}${unit ? ` ${unit}` : ''}`;
+      addChip(propertyTitle(path), detail, `${propertyTitle(path)} ${detail}`, () => {
+        specificationValues[path] = { value: '', tolerance: '' };
+        renderSpecificationFilters();
+        renderGallery();
+      }, 'spec');
+    });
+
+    COUNTRY_FIELDS.forEach(({ key, title }) => {
+      countrySelection[key].forEach(country => {
+        specificationCountValue++;
+        addChip(country, key === 'origin' ? '(origin)' : '(user)', `${title}: ${country}`, () => {
+          countrySelection[key].delete(country);
+          renderSpecificationFilters();
+          renderGallery();
+        }, 'spec');
+      });
+    });
+
+    // Outside the chips, which scroll sideways: always in sight.
+    clearAllFilters.hidden = categoryCount + specificationCountValue + (term ? 1 : 0) < 2;
+    activeFilterStrip.hidden = activeFilters.children.length === 0;
+
+    categoriesCount.hidden = categoryCount === 0;
+    categoriesCount.textContent = String(categoryCount);
+    specificationCount.hidden = specificationCountValue === 0;
+    specificationCount.textContent = String(specificationCountValue);
+    clearSpecifications.disabled = specificationCountValue === 0;
+  }
+
+  clearAllFilters.addEventListener('click', () => clearEveryFilter());
+
+  function clearEveryFilter() {
+    search.value = '';
+    selections = selections.map(() => []);
+    activeSpecificationPaths.forEach(path => {
+      specificationValues[path] = { value: '', tolerance: '' };
+    });
+    countrySelection = { origin: new Set(), proliferation: new Set() };
+    renderFilters();
+    renderSpecificationFilters();
+    renderFilterSummary();
+    renderGallery();
+  }
+
+  specificationInfo.addEventListener('click', () => {
+    specificationNote.hidden = !specificationNote.hidden;
+    specificationInfo.setAttribute('aria-expanded', String(!specificationNote.hidden));
   });
 
   /* ----------------------------------------
@@ -2095,8 +2859,8 @@ window.STANDALONE_WARNING_MB = 50;
     });
 
     countryCatalog = {
-      origin: Array.from(countries.origin).sort((a, b) => a.localeCompare(b, 'en')),
-      proliferation: Array.from(countries.proliferation).sort((a, b) => a.localeCompare(b, 'en'))
+      origin: Array.from(countries.origin).sort(compareText),
+      proliferation: Array.from(countries.proliferation).sort(compareText)
     };
 
     if (preserve && hadCatalog) {
@@ -2116,7 +2880,7 @@ window.STANDALONE_WARNING_MB = 50;
     } else {
       countrySelection = { origin: new Set(), proliferation: new Set() };
       activeSpecificationPaths = new Set(
-        DEFAULT_SPEC_PATHS.filter(path => availableSpecifications.has(path))
+        config.search.criteria.filter(path => availableSpecifications.has(path))
       );
       specificationValues = {};
       activeSpecificationPaths.forEach(path => {
@@ -2167,39 +2931,9 @@ window.STANDALONE_WARNING_MB = 50;
 
   /* ---- Recap of the active technical criteria (under the category recap) */
 
+  // The active criteria are shown as chips in the top bar.
   function renderSpecificationSummary() {
-    const parts = [];
-
-    const makePart = (label, text) => {
-      const strong = document.createElement('strong');
-      strong.textContent = `${label}:`;
-      const wrapper = document.createElement('span');
-      wrapper.append(strong, document.createTextNode(` ${text}`));
-      return wrapper;
-    };
-
-    Array.from(activeSpecificationPaths).forEach(path => {
-      const criterion = specificationValues[path];
-      if (!criterion || criterion.value === '') return;
-
-      const unit = getPropertyUnit(path);
-      const tolerance = criterion.tolerance === '' ? '' : ` ± ${criterion.tolerance}`;
-      parts.push(makePart(
-        propertyTitle(path),
-        `${criterion.value}${tolerance}${unit ? ` ${unit}` : ''}`
-      ));
-    });
-
-    COUNTRY_FIELDS.forEach(({ key, title }) => {
-      const selected = Array.from(countrySelection[key]);
-      if (selected.length) parts.push(makePart(title, selected.join(', ')));
-    });
-
-    specificationSummary.replaceChildren();
-    parts.forEach((part, index) => {
-      if (index) specificationSummary.append(document.createTextNode('  ·  '));
-      specificationSummary.append(part);
-    });
+    renderActiveFilters();
   }
 
   /* ---- Country criteria */
@@ -2216,45 +2950,22 @@ window.STANDALONE_WARNING_MB = 50;
   }
 
   function renderCountryCriterion({ key, title, placeholder }) {
-    const block = document.createElement('div');
-    block.className = 'spec-country';
-
-    const label = document.createElement('div');
-    label.className = 'spec-criterion-label';
-    label.textContent = title;
-
     const listId = `spec-list-${key}`;
-    const datalist = document.createElement('datalist');
-    datalist.id = listId;
-    countryCatalog[key].forEach(value => {
-      const option = document.createElement('option');
-      option.value = value;
-      datalist.append(option);
+    const datalist = fillDatalist(el('datalist', { id: listId }), countryCatalog[key]);
+
+    const field = el('input', {
+      type: 'text',
+      placeholder,
+      autocomplete: 'off',
+      attrs: { list: listId, 'aria-label': title }
     });
 
-    const field = document.createElement('input');
-    field.type = 'text';
-    field.setAttribute('list', listId);
-    field.placeholder = placeholder;
-    field.autocomplete = 'off';
-    field.setAttribute('aria-label', title);
-
-    const chips = document.createElement('div');
-    chips.className = 'spec-chips';
-
-    countrySelection[key].forEach(value => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'spec-chip';
-      chip.textContent = value;
-      chip.setAttribute('aria-label', `Remove ${value}`);
-      chip.addEventListener('click', () => {
+    const chips = el('div', { class: 'spec-chips' },
+      ...Array.from(countrySelection[key], value => makeButton(value, 'spec-chip', () => {
         countrySelection[key].delete(value);
         renderSpecificationFilters();
         renderGallery();
-      });
-      chips.append(chip);
-    });
+      }, { attrs: { 'aria-label': `Remove ${value}` } })));
 
     const commit = () => {
       if (!addCountry(key, field.value)) return;
@@ -2267,14 +2978,10 @@ window.STANDALONE_WARNING_MB = 50;
       if (!event.inputType || event.inputType === 'insertReplacementText') commit();
     });
     field.addEventListener('change', commit);
-    field.addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        commit();
-      }
-    });
+    onEnter(field, commit);
 
-    block.append(label, field, datalist, chips);
+    const block = el('div', { class: 'spec-country' },
+      el('div', { class: 'spec-criterion-label', text: title }), field, datalist, chips);
     return { block, field };
   }
 
@@ -2283,70 +2990,65 @@ window.STANDALONE_WARNING_MB = 50;
 
     if (!groups.length || !hasAnySpecification()) {
       specificationFilters.hidden = true;
+      setFilterButtonAvailable(specificationsButton, false);
       renderSpecificationSummary();
       return;
     }
 
     specificationFilters.hidden = false;
+    setFilterButtonAvailable(specificationsButton, true);
 
     Array.from(activeSpecificationPaths).forEach(path => {
-      const row = document.createElement('div');
-      row.className = 'spec-criterion';
-
       const title = propertyTitle(path);
       const unitText = getPropertyUnitLabel(path);
 
-      const label = document.createElement('div');
-      label.className = 'spec-criterion-label';
-      label.textContent = title;
-      if (unitText) {
-        const unit = document.createElement('small');
-        unit.textContent = unitText;
-        label.append(unit);
-      }
+      const label = el('div', {
+        class: 'spec-criterion-label',
+        text: title,
+        title: unitText ? `${title} ${unitText}` : title
+      }, unitText ? el('small', { text: unitText }) : null);
 
-      const valueInput = document.createElement('input');
-      valueInput.type = 'number';
-      valueInput.step = 'any';
-      valueInput.placeholder = title;
-      valueInput.setAttribute('aria-label', `${path} target value`);
-      valueInput.value = specificationValues[path]?.value ?? '';
-
-      const toleranceInput = document.createElement('input');
-      toleranceInput.type = 'number';
-      toleranceInput.step = 'any';
-      toleranceInput.min = '0';
-      toleranceInput.placeholder = 'Tolerance ±';
-      toleranceInput.setAttribute('aria-label', `${path} tolerance`);
-      toleranceInput.value = specificationValues[path]?.tolerance ?? '';
-
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'spec-remove';
-      remove.textContent = 'Remove';
-      remove.setAttribute('aria-label', `Remove ${path} search criterion`);
-
-      valueInput.addEventListener('input', () => {
-        specificationValues[path].value = valueInput.value;
-        renderSpecificationSummary();
-        renderGallery();
+      const valueInput = el('input', {
+        type: 'number',
+        step: 'any',
+        placeholder: 'Value',
+        value: specificationValues[path]?.value ?? '',
+        dataset: { path },
+        attrs: { 'aria-label': `${title}: target value` },
+        on: {
+          input: () => {
+            specificationValues[path].value = valueInput.value;
+            renderSpecificationSummary();
+            renderGallery();
+          }
+        }
       });
 
-      toleranceInput.addEventListener('input', () => {
-        specificationValues[path].tolerance = toleranceInput.value;
-        renderSpecificationSummary();
-        renderGallery();
+      const toleranceInput = el('input', {
+        type: 'number',
+        step: 'any',
+        min: '0',
+        placeholder: '± Tolerance',
+        title: 'Tolerance: empty means an exact match',
+        value: specificationValues[path]?.tolerance ?? '',
+        attrs: { 'aria-label': `${title}: tolerance` },
+        on: {
+          input: () => {
+            specificationValues[path].tolerance = toleranceInput.value;
+            renderSpecificationSummary();
+            renderGallery();
+          }
+        }
       });
 
-      remove.addEventListener('click', () => {
+      const remove = makeButton('×', 'spec-remove', () => {
         activeSpecificationPaths.delete(path);
         delete specificationValues[path];
         renderSpecificationFilters();
         renderGallery();
-      });
+      }, { title: 'Remove this criterion', attrs: { 'aria-label': `Remove the criterion ${title}` } });
 
-      row.append(label, valueInput, toleranceInput, remove);
-      specificationCriteria.append(row);
+      specificationCriteria.append(el('div', { class: 'spec-criterion' }, label, valueInput, toleranceInput, remove));
     });
 
     COUNTRY_FIELDS.forEach(field => {
@@ -2357,13 +3059,22 @@ window.STANDALONE_WARNING_MB = 50;
       if (focusCountryKey === field.key) input.focus();
     });
 
+    // "+ Add a criterion" list: the searchable properties not shown yet.
     const optionalPaths = Array.from(availableSpecifications.keys())
-      .filter(path => !activeSpecificationPaths.has(path));
+      .filter(path => !activeSpecificationPaths.has(path))
+      .sort((a, b) => compareText(getPropertyOptionLabel(a), getPropertyOptionLabel(b)));
 
-    document.getElementById('addSpecification').hidden = optionalPaths.length === 0;
+    specificationSelect.replaceChildren(
+      el('option', { value: '', text: '+ Add a criterion…' }),
+      ...optionalPaths.map(path => el('option', { value: path, text: getPropertyOptionLabel(path) }))
+    );
+    specificationSelect.value = '';
+    specificationSelect.hidden = optionalPaths.length === 0;
 
     const mixed = Array.from(availableSpecifications.values()).some(units => units.size > 1);
     specificationNote.textContent =
+      'Type a target value, and a tolerance if needed, to keep the folders that match; ' +
+      'pick countries to keep the folders linked to one of them. ' +
       'Lengths are compared in metres (mm, cm, km, in, ft and yd are converted); the specification ' +
       'in the viewer keeps the original text. Leave a target empty to ignore it; an empty tolerance ' +
       'means an exact match. Several countries in one field match any of them.' +
@@ -2372,44 +3083,20 @@ window.STANDALONE_WARNING_MB = 50;
     renderSpecificationSummary();
   }
 
-  function openSpecificationPicker() {
-    const optionalPaths = Array.from(availableSpecifications.keys())
-      .filter(path => !activeSpecificationPaths.has(path))
-      .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
-
-    specificationSelect.replaceChildren();
-
-    optionalPaths.forEach(path => {
-      const option = document.createElement('option');
-      option.value = path;
-      option.textContent = getPropertyOptionLabel(path);
-      specificationSelect.append(option);
-    });
-
-    specificationPicker.hidden = optionalPaths.length === 0;
-    if (optionalPaths.length) specificationSelect.focus();
-  }
-
-  document.getElementById('addSpecification').addEventListener('click', () => {
-    openSpecificationPicker();
-  });
-
-  document.getElementById('confirmSpecification').addEventListener('click', () => {
+  specificationSelect.addEventListener('change', () => {
     const path = specificationSelect.value;
     if (!path || activeSpecificationPaths.has(path)) return;
 
     activeSpecificationPaths.add(path);
     specificationValues[path] = { value: '', tolerance: '' };
-    specificationPicker.hidden = true;
     renderSpecificationFilters();
     renderGallery();
+    const field = Array.from(specificationCriteria.querySelectorAll('input[data-path]'))
+      .find(input => input.dataset.path === path);
+    if (field) field.focus();
   });
 
-  document.getElementById('cancelSpecification').addEventListener('click', () => {
-    specificationPicker.hidden = true;
-  });
-
-  document.getElementById('clearSpecifications').addEventListener('click', () => {
+  clearSpecifications.addEventListener('click', () => {
     activeSpecificationPaths.forEach(path => {
       specificationValues[path] = { value: '', tolerance: '' };
     });
@@ -2485,28 +3172,19 @@ window.STANDALONE_WARNING_MB = 50;
   }
 
   function appendSpecRow(container, label, value, unit) {
-    const row = document.createElement('div');
-    row.className = 'spec-tree-row';
-
-    const name = document.createElement('span');
-    name.textContent = label;
-
-    const content = document.createElement('strong');
     const text = formatSpecValue(value, typeof value === 'number' ? unit : '');
+    const content = typeof value === 'string' && /^https?:\/\/\S+$/i.test(value.trim())
+      ? el('strong', {}, el('a', { href: value.trim(), target: '_blank', rel: 'noopener noreferrer', text }))
+      : el('strong', { text });
 
-    if (typeof value === 'string' && /^https?:\/\/\S+$/i.test(value.trim())) {
-      const link = document.createElement('a');
-      link.href = value.trim();
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = text;
-      content.append(link);
-    } else {
-      content.textContent = text;
-    }
+    container.append(el('div', { class: 'spec-tree-row' }, el('span', { text: label }), content));
+  }
 
-    row.append(name, content);
-    container.append(row);
+  // Titled block of the tree, holding the rows of a list or an object.
+  function appendSpecGroup(container, label) {
+    const group = el('div', { class: 'spec-tree-group' }, el('div', { class: 'spec-tree-heading', text: label }));
+    container.append(group);
+    return group;
   }
 
   function formatPropertyEntry(item) {
@@ -2533,45 +3211,21 @@ window.STANDALONE_WARNING_MB = 50;
 
     // ODIN { name, value, units } list: one row per entry.
     if (isPropertyList(value)) {
-      const group = document.createElement('div');
-      group.className = 'spec-tree-group';
-
-      const heading = document.createElement('div');
-      heading.className = 'spec-tree-heading';
-      heading.textContent = label;
-      group.append(heading);
-
+      const group = appendSpecGroup(container, label);
       value.forEach(item => appendSpecRow(group, item.name.trim(), formatPropertyEntry(item), null));
-
-      container.append(group);
       return;
     }
 
     if (Array.isArray(value)) {
-      const group = document.createElement('div');
-      group.className = 'spec-tree-group';
-
-      const heading = document.createElement('div');
-      heading.className = 'spec-tree-heading';
-      heading.textContent = label;
-      group.append(heading);
-
+      const group = appendSpecGroup(container, label);
       value.forEach((item, index) => {
         renderSpecificationNode(group, `[${index}]`, item, inheritedUnit);
       });
-
-      container.append(group);
       return;
     }
 
     if (isPlainObject(value)) {
-      const group = document.createElement('div');
-      group.className = 'spec-tree-group';
-
-      const heading = document.createElement('div');
-      heading.className = 'spec-tree-heading';
-      heading.textContent = label;
-      group.append(heading);
+      const group = appendSpecGroup(container, label);
 
       const ownUnit = typeof value.unit === 'string' && value.unit.trim()
         ? value.unit.trim()
@@ -2586,8 +3240,6 @@ window.STANDALONE_WARNING_MB = 50;
           renderSpecificationNode(group, key, child, ownUnit);
         });
       }
-
-      container.append(group);
       return;
     }
 
@@ -2597,29 +3249,23 @@ window.STANDALONE_WARNING_MB = 50;
   // Read-only view of a specification.
   function renderSpecificationReadView(container, specification) {
     if (!specification) {
-      const empty = document.createElement('p');
-      empty.className = 'spec-empty';
-      empty.textContent = 'No specifications for this folder.';
-      container.append(empty);
+      container.append(el('p', { class: 'spec-empty', text: 'No specifications for this folder.' }));
       return;
     }
 
     if (specification.error || !specification.data || !isPlainObject(specification.data)) {
-      const error = document.createElement('div');
-      error.className = 'spec-error';
-      error.textContent = specification.error
-        ? `Could not read specifications.json: ${specification.error}`
-        : 'The specifications file does not contain a valid JSON object.';
-      container.append(error);
+      container.append(el('div', {
+        class: 'spec-error',
+        text: specification.error
+          ? `Could not read specifications.json: ${specification.error}`
+          : 'The specifications file does not contain a valid JSON object.'
+      }));
       return;
     }
 
     const entries = Object.entries(specification.data);
     if (!entries.length) {
-      const empty = document.createElement('p');
-      empty.className = 'spec-empty';
-      empty.textContent = 'The specifications are empty.';
-      container.append(empty);
+      container.append(el('p', { class: 'spec-empty', text: 'The specifications are empty.' }));
       return;
     }
 
@@ -2665,16 +3311,9 @@ window.STANDALONE_WARNING_MB = 50;
     }
   }
 
-  // Expanded by default; the last choice is kept from one folder to the next and between visits.
+  // The choice is kept from one folder to the next; its value at opening comes from the settings.
   viewerSpecificationsToggle.addEventListener('click', () => {
     specificationsCollapsed = !specificationsCollapsed;
-
-    try {
-      localStorage.setItem(SPECIFICATIONS_COLLAPSED_KEY, String(specificationsCollapsed));
-    } catch (error) {
-      console.warn('Could not save the specifications state to localStorage:', error);
-    }
-
     renderViewerPanel();
   });
 
@@ -2710,7 +3349,22 @@ window.STANDALONE_WARNING_MB = 50;
     { name: 'Draft', units: 'm' }
   ];
 
-  let specEditor = null; // { draft, dirty, error }
+  let specEditor = null; // { draft, customGroups, dirty, error }
+
+  // Custom group: a top-level key that is not a known section, holding a list of
+  // { name, value, units } lines, e.g. "Armament": [{ "name": "Main gun", "value": "120", "units": "mm" }].
+  // Shown and searched like the dimensions ("Armament – Main gun").
+  function isReservedGroupName(name) {
+    const lower = normalisedName(name);
+    // "__proto__" would not become a key of the specification object.
+    return lower === 'unit' || lower === '__proto__' || EDITOR_SECTIONS.some(section =>
+      section.key.toLowerCase() === lower || section.title.toLowerCase() === lower);
+  }
+
+  function isCustomGroup(key, value) {
+    return !isReservedGroupName(key) &&
+      Array.isArray(value) && (value.length === 0 || isPropertyList(value));
+  }
 
   function isEditableSection(section, value) {
     if (section.type === 'properties') {
@@ -2728,7 +3382,14 @@ window.STANDALONE_WARNING_MB = 50;
     const draft = specification && specification.data
       ? JSON.parse(JSON.stringify(specification.data))
       : {};
-    specEditor = { draft, dirty: false, error: '' };
+    // The custom groups are edited apart, so that renaming one does not move it in the draft.
+    const customGroups = [];
+    Object.keys(draft).forEach(key => {
+      if (!isCustomGroup(key, draft[key])) return;
+      customGroups.push({ originalKey: key, name: key, rows: draft[key] });
+      delete draft[key];
+    });
+    specEditor = { draft, customGroups, dirty: false, error: '' };
     renderViewerPanel();
   }
 
@@ -2752,41 +3413,36 @@ window.STANDALONE_WARNING_MB = 50;
     renderViewerPanel();
   }
 
-  function editorButton(text, className, onClick) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = text;
-    if (className) button.className = className;
-    button.addEventListener('click', onClick);
-    return button;
-  }
-
   function editorInput(value, placeholder, focusId, onInput) {
-    const field = document.createElement('input');
-    field.type = 'text';
-    field.value = value;
-    field.placeholder = placeholder;
-    field.setAttribute('aria-label', placeholder);
-    if (focusId) field.dataset.focus = focusId;
-    field.addEventListener('input', () => {
-      onInput(field.value);
-      markDraftChanged();
+    const field = el('input', {
+      type: 'text',
+      value,
+      placeholder,
+      attrs: { 'aria-label': placeholder },
+      dataset: focusId ? { focus: focusId } : null,
+      on: {
+        input: () => {
+          onInput(field.value);
+          markDraftChanged();
+        }
+      }
     });
     return field;
+  }
+
+  // Section of the editor: a head (title or name field, then buttons) and its content.
+  function editorSection(className, headChildren, ...content) {
+    return el('div', { class: className }, el('div', { class: 'spec-edit-head' }, ...headChildren), ...content);
   }
 
   function normalisedName(name) {
     return String(name || '').trim().toLowerCase();
   }
 
-  function renderPropertiesSection(body, section, rows) {
-    const list = document.createElement('div');
-    list.className = 'spec-edit-rows';
+  function renderPropertiesSection(body, section, rows, predefinedRows = PREDEFINED_DIMENSIONS, addLabel = '+ Custom field') {
+    const list = el('div', { class: 'spec-edit-rows' });
 
     rows.forEach((entry, index) => {
-      const row = document.createElement('div');
-      row.className = 'spec-edit-row';
-
       const name = editorInput(String(entry.name ?? ''), 'Name', `${section.key}-${index}-name`,
         value => { entry.name = value; });
       const value = editorInput(String(entry.value ?? ''), 'Value', `${section.key}-${index}-value`,
@@ -2794,35 +3450,32 @@ window.STANDALONE_WARNING_MB = 50;
       const units = editorInput(String(entry.units ?? entry.unit ?? ''), 'Unit', null,
         text => { entry.units = text; delete entry.unit; });
 
-      const remove = editorButton('×', 'spec-edit-remove', () => {
+      const remove = makeButton('×', 'spec-edit-remove', () => {
         rows.splice(index, 1);
         markDraftChanged();
         renderViewerPanel();
-      });
-      remove.setAttribute('aria-label', `Remove ${entry.name || 'this line'}`);
+      }, { attrs: { 'aria-label': `Remove ${entry.name || 'this line'}` } });
 
-      row.append(name, value, units, remove);
-      list.append(row);
+      list.append(el('div', { class: 'spec-edit-row' }, name, value, units, remove));
     });
 
     body.append(list);
 
     // Predefined entries, offered only when missing.
-    const adds = document.createElement('div');
-    adds.className = 'spec-edit-adds';
+    const adds = el('div', { class: 'spec-edit-adds' });
     const present = new Set(rows.map(entry => normalisedName(entry.name)));
 
-    PREDEFINED_DIMENSIONS
+    predefinedRows
       .filter(predefined => !present.has(normalisedName(predefined.name)))
       .forEach(predefined => {
-        adds.append(editorButton(`+ ${predefined.name}`, 'spec-edit-add', () => {
+        adds.append(makeButton(`+ ${predefined.name}`, 'spec-edit-add', () => {
           rows.push({ name: predefined.name, value: '', units: predefined.units });
           markDraftChanged();
           renderViewerPanel(`[data-focus="${section.key}-${rows.length - 1}-value"]`);
         }));
       });
 
-    adds.append(editorButton('+ Custom field', 'spec-edit-add', () => {
+    adds.append(makeButton(addLabel, 'spec-edit-add', () => {
       rows.push({ name: '', value: '', units: '' });
       markDraftChanged();
       renderViewerPanel(`[data-focus="${section.key}-${rows.length - 1}-name"]`);
@@ -2832,40 +3485,27 @@ window.STANDALONE_WARNING_MB = 50;
   }
 
   function renderListSection(body, section, values) {
-    const chips = document.createElement('div');
-    chips.className = 'spec-edit-chips';
-
-    values.forEach((value, index) => {
-      const chip = editorButton(value, 'spec-edit-chip', () => {
+    const chips = el('div', { class: 'spec-edit-chips' },
+      ...values.map((value, index) => makeButton(value, 'spec-edit-chip', () => {
         values.splice(index, 1);
         markDraftChanged();
         renderViewerPanel(`[data-focus="${section.key}-new"]`);
-      });
-      chip.setAttribute('aria-label', `Remove ${value}`);
-      chips.append(chip);
+      }, { attrs: { 'aria-label': `Remove ${value}` } })));
+
+    const line = el('div', { class: 'spec-edit-line' });
+
+    const field = el('input', {
+      type: 'text',
+      placeholder: section.placeholder,
+      autocomplete: 'off',
+      dataset: { focus: `${section.key}-new` },
+      attrs: { 'aria-label': section.placeholder }
     });
-
-    const line = document.createElement('div');
-    line.className = 'spec-edit-line';
-
-    const field = document.createElement('input');
-    field.type = 'text';
-    field.placeholder = section.placeholder;
-    field.autocomplete = 'off';
-    field.dataset.focus = `${section.key}-new`;
-    field.setAttribute('aria-label', section.placeholder);
 
     if (section.catalog && countryCatalog[section.catalog].length) {
       const listId = `editor-list-${section.key}`;
-      const datalist = document.createElement('datalist');
-      datalist.id = listId;
-      countryCatalog[section.catalog].forEach(country => {
-        const option = document.createElement('option');
-        option.value = country;
-        datalist.append(option);
-      });
       field.setAttribute('list', listId);
-      line.append(datalist);
+      line.append(fillDatalist(el('datalist', { id: listId }), countryCatalog[section.catalog]));
     }
 
     const add = () => {
@@ -2878,21 +3518,15 @@ window.STANDALONE_WARNING_MB = 50;
       renderViewerPanel(`[data-focus="${section.key}-new"]`);
     };
 
-    field.addEventListener('keydown', event => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        add();
-      }
-    });
+    onEnter(field, add);
 
-    line.append(field, editorButton('Add', null, add));
+    line.append(field, makeButton('Add', null, add));
     body.append(chips, line);
   }
 
   function renderSpecificationEditor(container) {
     const draft = specEditor.draft;
-    const form = document.createElement('div');
-    form.className = 'spec-editor';
+    const form = el('div', { class: 'spec-editor' });
 
     const keys = Object.keys(draft);
 
@@ -2900,19 +3534,14 @@ window.STANDALONE_WARNING_MB = 50;
       const section = EDITOR_SECTIONS.find(candidate => candidate.key === key);
       if (!section || !isEditableSection(section, draft[key])) return;
 
-      const block = document.createElement('div');
-      block.className = 'spec-edit-section';
-
-      const head = document.createElement('div');
-      head.className = 'spec-edit-head';
-      const title = document.createElement('strong');
-      title.textContent = section.title;
-      head.append(title, editorButton('Remove section', 'spec-edit-remove', () => {
-        delete draft[key];
-        markDraftChanged();
-        renderViewerPanel();
-      }));
-      block.append(head);
+      const block = editorSection('spec-edit-section', [
+        el('strong', { text: section.title }),
+        makeButton('Remove section', 'spec-edit-remove', () => {
+          delete draft[key];
+          markDraftChanged();
+          renderViewerPanel();
+        })
+      ]);
 
       if (section.type === 'properties') {
         renderPropertiesSection(block, section, draft[key]);
@@ -2927,57 +3556,56 @@ window.STANDALONE_WARNING_MB = 50;
       form.append(block);
     });
 
+    specEditor.customGroups.forEach((group, index) => {
+      const name = editorInput(group.name, 'Group name', `group${index}-title`, value => {
+        group.name = value;
+      });
+      name.classList.add('spec-edit-group-name');
+      const block = editorSection('spec-edit-section spec-edit-group', [
+        name,
+        makeButton('Remove group', 'spec-edit-remove', () => {
+          specEditor.customGroups.splice(index, 1);
+          markDraftChanged();
+          renderViewerPanel();
+        })
+      ]);
+
+      renderPropertiesSection(block, { key: `group${index}` }, group.rows, [], '+ Line');
+      form.append(block);
+    });
+
     const others = keys.filter(key => {
       const section = EDITOR_SECTIONS.find(candidate => candidate.key === key);
       return !section || !isEditableSection(section, draft[key]);
     });
     if (others.length) {
-      const note = document.createElement('p');
-      note.className = 'spec-edit-note';
-      note.textContent = `Kept unchanged: ${others.map(prettyKey).join(', ')}.`;
-      form.append(note);
+      form.append(el('p', { class: 'spec-edit-note', text: `Kept unchanged: ${others.map(prettyKey).join(', ')}.` }));
     }
 
-    // Missing sections.
+    // Missing sections, and a new custom group.
     const missing = EDITOR_SECTIONS.filter(section => !(section.key in draft));
-    if (missing.length) {
-      const block = document.createElement('div');
-      block.className = 'spec-edit-section';
-      const head = document.createElement('div');
-      head.className = 'spec-edit-head';
-      const title = document.createElement('strong');
-      title.textContent = 'Add a section';
-      head.append(title);
-
-      const adds = document.createElement('div');
-      adds.className = 'spec-edit-adds';
-      missing.forEach(section => {
-        adds.append(editorButton(`+ ${section.title}`, 'spec-edit-add', () => {
-          draft[section.key] = section.type === 'text' ? '' : [];
-          markDraftChanged();
-          const focus = section.type === 'properties' ? null : `[data-focus="${section.key}${section.type === 'list' ? '-new' : ''}"]`;
-          renderViewerPanel(focus);
-        }));
-      });
-
-      block.append(head, adds);
-      form.append(block);
-    }
+    const adds = el('div', { class: 'spec-edit-adds' },
+      ...missing.map(section => makeButton(`+ ${section.title}`, 'spec-edit-add', () => {
+        draft[section.key] = section.type === 'text' ? '' : [];
+        markDraftChanged();
+        const focus = section.type === 'properties' ? null : `[data-focus="${section.key}${section.type === 'list' ? '-new' : ''}"]`;
+        renderViewerPanel(focus);
+      })),
+      makeButton('+ Custom group', 'spec-edit-add', () => {
+        specEditor.customGroups.push({ originalKey: null, name: '', rows: [{ name: '', value: '', units: '' }] });
+        markDraftChanged();
+        renderViewerPanel(`[data-focus="group${specEditor.customGroups.length - 1}-title"]`);
+      }));
+    form.append(editorSection('spec-edit-section', [el('strong', { text: 'Add a section' })], adds));
 
     if (specEditor.error) {
-      const error = document.createElement('p');
-      error.className = 'spec-edit-error';
-      error.textContent = specEditor.error;
-      form.append(error);
+      form.append(el('p', { class: 'spec-edit-error', text: specEditor.error }));
     }
 
-    const footer = document.createElement('div');
-    footer.className = 'spec-edit-footer';
-    footer.append(
-      editorButton('Cancel', null, () => cancelSpecificationEditor()),
-      editorButton('Save specifications', 'spec-edit-save', () => saveSpecificationEditor())
-    );
-    form.append(footer);
+    form.append(el('div', { class: 'spec-edit-footer' },
+      makeButton('Cancel', null, () => cancelSpecificationEditor()),
+      makeButton('Save specifications', 'spec-edit-save', () => saveSpecificationEditor())
+    ));
 
     container.append(form);
   }
@@ -2994,37 +3622,78 @@ window.STANDALONE_WARNING_MB = 50;
     const draft = specEditor.draft;
     specEditor.error = '';
 
-    // Dimensions: empty lines are dropped, a value needs a name.
-    if (Array.isArray(draft.dimensions) && isEditableSection(EDITOR_SECTIONS[0], draft.dimensions)) {
+    const fail = message => {
+      specEditor.error = message;
+      renderViewerPanel();
+    };
+
+    // Lines of a dimension list or of a group: empty lines are dropped, a value needs a name.
+    const cleanRows = source => {
       const rows = [];
-      for (const entry of draft.dimensions) {
+      for (const entry of source) {
         const name = String(entry.name ?? '').trim();
         const value = String(entry.value ?? '').trim();
         const units = String(entry.units ?? entry.unit ?? '').trim();
         if (!name && !value) continue;
-        if (!name) {
-          specEditor.error = 'Each dimension needs a name.';
-          renderViewerPanel();
-          return;
-        }
+        if (!name) return null;
         const row = { name, value };
         if (units) row.units = units;
         rows.push(row);
       }
-      draft.dimensions = rows;
+      return rows;
+    };
+
+    let dimensions = null;
+    if (Array.isArray(draft.dimensions) && isEditableSection(EDITOR_SECTIONS[0], draft.dimensions)) {
+      dimensions = cleanRows(draft.dimensions);
+      if (!dimensions) return fail('Each dimension needs a name.');
     }
+
+    // Custom groups: a name, unique, that is not the name of a section.
+    const customGroups = [];
+    const usedNames = new Set(Object.keys(draft).map(normalisedName));
+    for (const group of specEditor.customGroups) {
+      const name = group.name.replace(/\s+/g, ' ').trim();
+      if (!name) return fail('Each group needs a name.');
+      if (isReservedGroupName(name)) return fail(`“${name}” is the name of a section: choose another group name.`);
+      if (usedNames.has(normalisedName(name))) return fail(`Two groups or sections are named “${name}”.`);
+      usedNames.add(normalisedName(name));
+      const rows = cleanRows(group.rows);
+      if (!rows) return fail(`Each line of the group “${name}” needs a name.`);
+      customGroups.push({ originalKey: group.originalKey, name, rows });
+    }
+
+    if (dimensions) draft.dimensions = dimensions;
     if (typeof draft.odinUrl === 'string') draft.odinUrl = draft.odinUrl.trim();
 
-    // The original key order is kept; new sections follow the usual order.
+    // The original key order is kept (a renamed group keeps its place); new sections follow
+    // the usual order, new groups come last.
     const previous = viewerGroup.specification;
     const originalKeys = previous && previous.data ? Object.keys(previous.data) : [];
-    const orderedKeys = [
-      ...originalKeys.filter(key => key in draft),
-      ...SECTION_ORDER.filter(key => key in draft && !originalKeys.includes(key)),
-      ...Object.keys(draft).filter(key => !originalKeys.includes(key) && !SECTION_ORDER.includes(key))
-    ];
+    const groupByOriginalKey = new Map(customGroups
+      .filter(group => group.originalKey !== null)
+      .map(group => [group.originalKey, group]));
+    const entries = [];
+    originalKeys.forEach(key => {
+      if (key in draft) entries.push([key, draft[key]]);
+      else if (groupByOriginalKey.has(key)) {
+        const group = groupByOriginalKey.get(key);
+        entries.push([group.name, group.rows]);
+      }
+    });
+    SECTION_ORDER
+      .filter(key => key in draft && !originalKeys.includes(key))
+      .forEach(key => entries.push([key, draft[key]]));
+    Object.keys(draft)
+      .filter(key => !originalKeys.includes(key) && !SECTION_ORDER.includes(key))
+      .forEach(key => entries.push([key, draft[key]]));
+    customGroups
+      .filter(group => group.originalKey === null || !originalKeys.includes(group.originalKey))
+      .forEach(group => entries.push([group.name, group.rows]));
+
+    const orderedKeys = entries.map(([key]) => key);
     const data = {};
-    orderedKeys.forEach(key => { data[key] = draft[key]; });
+    entries.forEach(([key, value]) => { data[key] = value; });
 
     viewerGroup.specification = orderedKeys.length
       ? {
@@ -3057,34 +3726,20 @@ window.STANDALONE_WARNING_MB = 50;
     if (!showStrip) return;
 
     files.forEach((item, index) => {
-      const thumb = document.createElement('button');
-      thumb.type = 'button';
-      thumb.className = 'viewer-thumb';
-      thumb.title = item.name;
-      thumb.setAttribute('aria-label', `Image ${index + 1}: ${item.name}`);
-
-      const img = document.createElement('img');
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      thumb.append(img);
-      showImage(img, thumb, item);
-
-      thumb.addEventListener('click', () => {
+      const img = el('img', { loading: 'lazy', decoding: 'async' });
+      const thumb = makeButton(null, 'viewer-thumb', () => {
         viewerIndex = index;
         updateViewer();
-      });
+      }, { title: item.name, attrs: { 'aria-label': `Image ${index + 1}: ${item.name}` } }, img);
+      showImage(img, thumb, item);
       viewerThumbs.append(thumb);
     });
 
     if (editMode) {
-      const add = document.createElement('button');
-      add.type = 'button';
-      add.className = 'viewer-thumb viewer-thumb-add';
-      add.textContent = '+';
-      add.title = 'Add images to this folder';
-      add.setAttribute('aria-label', 'Add images to this folder');
-      add.addEventListener('click', addImagesToViewerGroup);
-      viewerThumbs.append(add);
+      viewerThumbs.append(makeButton('+', 'viewer-thumb viewer-thumb-add', addImagesToViewerGroup, {
+        title: 'Add images to this folder',
+        attrs: { 'aria-label': 'Add images to this folder' }
+      }));
     }
   }
 
@@ -3128,26 +3783,17 @@ window.STANDALONE_WARNING_MB = 50;
     viewerMeta.replaceChildren();
     if (!viewerGroup) return;
 
-    const folder = document.createElement('strong');
-    folder.textContent = viewerGroup.title;
-
-    const line = document.createElement('div');
-    line.className = 'viewer-meta-line';
-    const categories = document.createElement('span');
-    categories.className = 'viewer-meta-categories';
-    categories.textContent = getCategories(viewerGroup).join(' / ') || 'No category';
-    line.append(categories);
+    const line = el('div', { class: 'viewer-meta-line' },
+      el('span', { class: 'viewer-meta-categories', text: getCategories(viewerGroup).join(' / ') || 'No category' }));
 
     if (editMode) {
-      const change = document.createElement('button');
-      change.type = 'button';
-      change.className = 'viewer-meta-edit';
-      change.textContent = 'Change category';
-      change.addEventListener('click', () => openCategoryEditor([viewerGroup]));
-      line.append(change);
+      line.append(
+        makeButton('Rename', 'viewer-meta-edit', () => openRenameEditor(viewerGroup)),
+        makeButton('Change category', 'viewer-meta-edit', () => openCategoryEditor([viewerGroup]))
+      );
     }
 
-    viewerMeta.append(folder, line);
+    viewerMeta.append(el('strong', { text: viewerGroup.title }), line);
   }
 
   function closeViewer() {
@@ -3177,12 +3823,6 @@ window.STANDALONE_WARNING_MB = 50;
 
   viewerFit.addEventListener('click', () => {
     fitMode = !fitMode;
-
-    try {
-      localStorage.setItem(FIT_MODE_KEY, String(fitMode));
-    } catch (error) {
-      console.warn('Could not save the fit mode to localStorage:', error);
-    }
 
     viewer.classList.toggle('fit-mode', fitMode);
     viewerFit.textContent = fitMode ? 'Natural size' : 'Fit to window';
@@ -3249,9 +3889,7 @@ window.STANDALONE_WARNING_MB = 50;
       if (value) values.add(value);
     });
 
-    return Array.from(values).sort((a, b) =>
-      a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' })
-    );
+    return Array.from(values).sort(compareText);
   }
 
   function pruneDescendants(changedLevel) {
@@ -3302,46 +3940,23 @@ window.STANDALONE_WARNING_MB = 50;
       const values = getValuesAtLevel(level);
       if (values.length === 0) break;
 
-      const row = document.createElement('div');
-      row.className = 'filter-row';
-
-      const label = document.createElement('div');
-      label.className = 'filter-label';
-      label.textContent = level === 0 ? 'Category' : `Subcategory ${level}`;
-
-      const options = document.createElement('div');
-      options.className = 'filter-options';
-
       const selected = selectedAt(level);
 
-      const allButton = document.createElement('button');
-      allButton.type = 'button';
-      allButton.className = 'filter-chip all-chip';
-      if (selected.length === 0) allButton.classList.add('active');
-      allButton.textContent = 'All';
-      allButton.addEventListener('click', () => toggleSelection(level, null));
-      options.append(allButton);
+      const options = el('div', { class: 'filter-options' },
+        makeButton('All', selected.length === 0 ? 'filter-chip all-chip active' : 'filter-chip all-chip',
+          () => toggleSelection(level, null)),
+        ...values.map(value => {
+          const active = selected.includes(value);
+          return makeButton(value, active ? 'filter-chip active' : 'filter-chip',
+            () => toggleSelection(level, value), { attrs: { 'aria-pressed': String(active) } });
+        }));
 
-      values.forEach(value => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'filter-chip';
-        button.textContent = value;
-
-        if (selected.includes(value)) button.classList.add('active');
-
-        button.setAttribute(
-          'aria-pressed',
-          selected.includes(value) ? 'true' : 'false'
-        );
-
-        button.addEventListener('click', () => toggleSelection(level, value));
-        options.append(button);
-      });
-
-      row.append(label, options);
-      filtersContainer.append(row);
+      filtersContainer.append(el('div', { class: 'filter-row' },
+        el('div', { class: 'filter-label', text: level === 0 ? 'Category' : `Subcategory ${level}` }),
+        options));
     }
+
+    setFilterButtonAvailable(categoriesButton, filtersContainer.children.length > 0);
   }
 
   /* ----------------------------------------
@@ -3349,29 +3964,7 @@ window.STANDALONE_WARNING_MB = 50;
   ---------------------------------------- */
 
   function renderFilterSummary() {
-    const parts = [];
-
-    for (let level = 0; level < maxDepth; level++) {
-      const selected = selectedAt(level);
-
-      if (selected.length > 0) {
-        const label = level === 0 ? 'Category' : `Subcategory ${level}`;
-        const strong = document.createElement('strong');
-        strong.textContent = `${label}:`;
-
-        const text = document.createTextNode(` ${selected.join(', ')}`);
-        const wrapper = document.createElement('span');
-        wrapper.append(strong, text);
-        parts.push(wrapper);
-      }
-    }
-
-    filterSummary.replaceChildren();
-
-    parts.forEach((part, index) => {
-      if (index) filterSummary.append(document.createTextNode('  ·  '));
-      filterSummary.append(part);
-    });
+    renderActiveFilters();
   }
 
   /* ----------------------------------------
@@ -3403,67 +3996,44 @@ window.STANDALONE_WARNING_MB = 50;
   let fallbackScrollHandler = null;
 
   function createGalleryCard(group) {
-    const card = document.createElement('article');
-    card.className = 'card';
     let index = 0;
-
-    const head = document.createElement('div');
-    head.className = 'card-head';
-
-    const headingWrap = document.createElement('div');
-    const cardTitle = document.createElement('h2');
-    cardTitle.textContent = group.title;
-    cardTitle.title = group.title;
-    headingWrap.append(cardTitle);
-
-    const path = document.createElement('div');
-    path.className = 'path';
-    path.textContent = getCategories(group).slice(1).join(' / ') || '\u00a0';
-    path.title = getCategories(group).slice(1).join(' / ') || '\u00a0';
-    headingWrap.append(path);
-    head.append(headingWrap);
+    const subPath = getCategories(group).slice(1).join(' / ') || '\u00a0';
 
     // Selection box, shown in edit mode only (CSS).
-    card.dataset.key = group.key;
-    const select = document.createElement('label');
-    select.className = 'card-select';
-    select.title = 'Select this folder';
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = selectedKeys.has(group.key);
-    checkbox.setAttribute('aria-label', `Select ${group.title}`);
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) selectedKeys.add(group.key);
-      else selectedKeys.delete(group.key);
-      card.classList.toggle('is-selected', checkbox.checked);
-      updateEditBar();
+    const checkbox = el('input', {
+      type: 'checkbox',
+      checked: selectedKeys.has(group.key),
+      attrs: { 'aria-label': `Select ${group.title}` },
+      on: {
+        change: () => {
+          if (checkbox.checked) selectedKeys.add(group.key);
+          else selectedKeys.delete(group.key);
+          card.classList.toggle('is-selected', checkbox.checked);
+          updateEditBar();
+        }
+      }
     });
+
+    const head = el('div', { class: 'card-head' },
+      el('div', {},
+        el('h2', { text: group.title, title: group.title }),
+        el('div', { class: 'path', text: subPath, title: subPath })),
+      el('label', { class: 'card-select', title: 'Select this folder' }, checkbox));
+
+    const img = el('img', { loading: 'lazy', decoding: 'async', on: { click: () => openViewer(group, index) } });
+    const prev = makeButton('‹', 'nav prev', () => {
+      index = (index - 1 + group.files.length) % group.files.length;
+      update();
+    }, { attrs: { 'aria-label': 'Previous image' } });
+    const next = makeButton('›', 'nav next', () => {
+      index = (index + 1) % group.files.length;
+      update();
+    }, { attrs: { 'aria-label': 'Next image' } });
+    const counter = el('span', { class: 'photo-index' });
+    const photo = el('div', { class: 'photo' }, img, prev, next, counter);
+
+    const card = el('article', { class: 'card', dataset: { key: group.key } }, head, photo);
     card.classList.toggle('is-selected', checkbox.checked);
-    select.append(checkbox);
-    head.append(select);
-
-    const photo = document.createElement('div');
-    photo.className = 'photo';
-
-    const img = document.createElement('img');
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    img.addEventListener('click', () => openViewer(group, index));
-
-    const prev = document.createElement('button');
-    prev.className = 'nav prev';
-    prev.type = 'button';
-    prev.textContent = '‹';
-    prev.setAttribute('aria-label', 'Previous image');
-
-    const next = document.createElement('button');
-    next.className = 'nav next';
-    next.type = 'button';
-    next.textContent = '›';
-    next.setAttribute('aria-label', 'Next image');
-
-    const counter = document.createElement('span');
-    counter.className = 'photo-index';
 
     function update() {
       const item = group.files[index];
@@ -3473,17 +4043,6 @@ window.STANDALONE_WARNING_MB = 50;
       next.disabled = group.files.length < 2;
     }
 
-    prev.addEventListener('click', () => {
-      index = (index - 1 + group.files.length) % group.files.length;
-      update();
-    });
-    next.addEventListener('click', () => {
-      index = (index + 1) % group.files.length;
-      update();
-    });
-
-    photo.append(img, prev, next, counter);
-    card.append(head, photo);
     update();
     return card;
   }
@@ -3505,26 +4064,11 @@ window.STANDALONE_WARNING_MB = 50;
       let section = categorySections.get(key);
 
       if (!section) {
-        const sectionElement = document.createElement('section');
-        sectionElement.className = 'category-section';
-
-        const heading = document.createElement('div');
-        heading.className = 'category-heading';
-
-        const title = document.createElement('h2');
-        title.textContent = rawCategory
-          ? rawCategory.charAt(0).toLocaleUpperCase('en') + rawCategory.slice(1)
-          : 'Uncategorized';
-
-        const rule = document.createElement('span');
-        rule.className = 'category-rule';
-
-        heading.append(title, rule);
-
-        const cardGrid = document.createElement('div');
-        cardGrid.className = 'category-grid';
-
-        sectionElement.append(heading, cardGrid);
+        const title = rawCategory.charAt(0).toLocaleUpperCase('en') + rawCategory.slice(1);
+        const cardGrid = el('div', { class: 'category-grid' });
+        const sectionElement = el('section', { class: 'category-section' },
+          el('div', { class: 'category-heading' }, el('h2', { text: title }), el('span', { class: 'category-rule' })),
+          cardGrid);
         section = { section: sectionElement, cardGrid };
         categorySections.set(key, section);
         fragment.append(sectionElement);
@@ -3537,10 +4081,8 @@ window.STANDALONE_WARNING_MB = 50;
 
     if (renderedCount < visibleGroups.length) {
       if (!loadMoreSentinel) {
-        loadMoreSentinel = document.createElement('div');
-        loadMoreSentinel.className = 'empty';
+        loadMoreSentinel = el('div', { class: 'empty', text: 'Scroll to load more…' });
         loadMoreSentinel.style.gridColumn = '1 / -1';
-        loadMoreSentinel.textContent = 'Scroll to load more…';
       }
 
       gallery.append(loadMoreSentinel);
@@ -3548,6 +4090,18 @@ window.STANDALONE_WARNING_MB = 50;
     } else if (loadMoreSentinel) {
       loadMoreSentinel.remove();
     }
+  }
+
+  // "36 images in 12 folders": what the filters and the search leave, in the active filter strip.
+  function updateResultCount() {
+    const images = visibleGroups.reduce((sum, group) => sum + group.files.length, 0);
+    const folders = visibleGroups.length;
+    resultCount.replaceChildren(
+      el('strong', { text: String(images) }),
+      ` image${images !== 1 ? 's' : ''} in `,
+      el('strong', { text: String(folders) }),
+      ` folder${folders !== 1 ? 's' : ''}`
+    );
   }
 
   function renderGallery() {
@@ -3579,22 +4133,13 @@ window.STANDALONE_WARNING_MB = 50;
       return searchableText.includes(term);
     });
 
+    updateResultCount();
     updateEditBar();
     gallery.replaceChildren();
 
     if (!visibleGroups.length) {
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-
-      const title = document.createElement('strong');
-      title.textContent = 'No results';
-
-      empty.append(
-        title,
-        document.createTextNode('Try changing your filters or search term.')
-      );
-
-      gallery.append(empty);
+      gallery.append(el('div', { class: 'empty' },
+        el('strong', { text: 'No results' }), 'Try changing your filters or search term.'));
       return;
     }
 
@@ -3696,9 +4241,7 @@ window.STANDALONE_WARNING_MB = 50;
   // <script src> works from file:// in every browser, unlike fetch().
   function loadScript(src) {
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
+      const script = el('script', { src, async: true });
       script.onload = () => { script.remove(); resolve(); };
       script.onerror = () => { script.remove(); reject(new Error(`${src} could not be loaded.`)); };
       document.body.append(script);
@@ -3818,15 +4361,28 @@ window.STANDALONE_WARNING_MB = 50;
   }
 
   // Shows an image in an <img>, loading its data file first if needed.
+  // The holder keeps its "loading" state until the image is decoded (lazy images included).
   function showImage(img, holder, item) {
     img.alt = item.name;
     img.dataset.imageId = item.id;
     holder.classList.remove('is-missing');
 
-    if (item.url) {
-      img.src = item.url;
+    const setSource = url => {
+      img.onload = () => {
+        if (img.dataset.imageId === item.id) holder.classList.remove('is-loading');
+      };
+      img.onerror = () => {
+        if (img.dataset.imageId !== item.id || !img.getAttribute('src')) return;
+        holder.classList.remove('is-loading');
+        holder.classList.add('is-missing');
+      };
+      img.src = url;
       img.classList.remove('is-pending');
-      holder.classList.remove('is-loading');
+      holder.classList.toggle('is-loading', !(img.complete && img.naturalWidth));
+    };
+
+    if (item.url) {
+      setSource(item.url);
       return;
     }
 
@@ -3837,9 +4393,7 @@ window.STANDALONE_WARNING_MB = 50;
     getImageUrl(item)
       .then(url => {
         if (img.dataset.imageId !== item.id) return;
-        img.src = url;
-        img.classList.remove('is-pending');
-        holder.classList.remove('is-loading');
+        setSource(url);
       })
       .catch(error => {
         if (!error.reported) console.error(error);
@@ -3872,23 +4426,17 @@ window.STANDALONE_WARNING_MB = 50;
 
   function renderErrors() {
     errorCard.hidden = errorEntries.length === 0;
-    errorCardTitle.textContent =
-      `${errorEntries.length} error${errorEntries.length !== 1 ? 's' : ''}`;
+    errorCardTitle.textContent = plural(errorEntries.length, 'error');
     errorList.replaceChildren();
 
     errorEntries.slice(0, ERROR_LIST_LIMIT).forEach(entry => {
-      const line = document.createElement('li');
-      const scope = document.createElement('span');
-      scope.textContent = `${entry.scope} · `;
-      line.append(scope, document.createTextNode(entry.message));
-      errorList.append(line);
+      errorList.append(el('li', {}, el('span', { text: `${entry.scope} · ` }), entry.message));
     });
 
     if (errorEntries.length > ERROR_LIST_LIMIT) {
-      const more = document.createElement('li');
-      more.textContent =
-        `…and ${errorEntries.length - ERROR_LIST_LIMIT} more (see the browser console).`;
-      errorList.append(more);
+      errorList.append(el('li', {
+        text: `…and ${errorEntries.length - ERROR_LIST_LIMIT} more (see the browser console).`
+      }));
     }
   }
 
@@ -3987,7 +4535,7 @@ window.STANDALONE_WARNING_MB = 50;
       const writes = plan.writes.length;
       const deletes = plan.toDelete.length;
       menuSaveDescription.textContent =
-        `${writes} file${writes !== 1 ? 's' : ''} to download` +
+        `${plural(writes, 'file')} to download` +
         (deletes ? ` and ${deletes} to delete` : '') +
         ', to copy into the data folder.';
     }
@@ -4038,11 +4586,12 @@ window.STANDALONE_WARNING_MB = 50;
   }
 
   function updateUnsavedState() {
-    unsavedBadge.hidden = dataVersion === savedDataVersion;
+    // Folder data or settings (gc_config.js) not saved yet.
+    unsavedBadge.hidden = dataVersion === savedDataVersion && !isConfigDirty();
   }
 
   window.addEventListener('beforeunload', event => {
-    if (dataVersion === savedDataVersion) return;
+    if (dataVersion === savedDataVersion && !isConfigDirty()) return;
     event.preventDefault();
     event.returnValue = '';
   });
@@ -4156,23 +4705,68 @@ window.STANDALONE_WARNING_MB = 50;
     groups = newGroups;
   }
 
-  // Adds new folders; a folder already present receives the images it does not have yet
-  // (same name = same image) and keeps its own specifications.json.
-  function mergeGroups(newGroups) {
-    const byKey = new Map(groups.map(group => [group.key, group]));
-    const result = { addedImages: 0, addedFolders: 0, skipped: 0 };
+  // Identifies a folder by its categories and its name, as shown in the gallery
+  // ("land/tanks/leclerc"), case ignored.
+  function galleryPathOf(group) {
+    return [...getCategories(group), group.title].join('/').toLowerCase();
+  }
+
+  // Folders of an import that already exist in the gallery (same categories and same name)
+  // and would bring something: images not present yet, or specifications to a folder
+  // that has none.
+  function findImportConflicts(newGroups) {
+    const byPath = new Map(groups.map(group => [galleryPathOf(group), group]));
+    const conflicts = [];
 
     newGroups.forEach(newGroup => {
-      const existing = byKey.get(newGroup.key);
+      const existing = byPath.get(galleryPathOf(newGroup));
+      if (!existing) return;
+
+      const names = new Set(existing.files.map(item => item.name.toLowerCase()));
+      const newImages = newGroup.files.filter(item => !names.has(item.name.toLowerCase())).length;
+      const newSpecification = !existing.specification && Boolean(newGroup.specification);
+
+      if (newImages || newSpecification) {
+        conflicts.push({ newGroup, existing, newImages, newSpecification });
+      }
+    });
+
+    return conflicts;
+  }
+
+  // Adds the folders of an import. A folder already present (same categories and same
+  // name) is merged unless it is in `notMerged`: it receives the images it does not have
+  // yet (same name = same image) and keeps its own specifications.json.
+  function mergeGroups(newGroups, notMerged = new Set()) {
+    const byPath = new Map(groups.map(group => [galleryPathOf(group), group]));
+    const keys = new Set(groups.map(group => group.key));
+    const result = { addedImages: 0, addedFolders: 0, mergedFolders: 0, ignoredFolders: 0, skipped: 0 };
+
+    newGroups.forEach(newGroup => {
+      const path = galleryPathOf(newGroup);
+      const existing = byPath.get(path);
 
       if (!existing) {
+        // Same source path as a folder that was renamed or moved: the key must stay unique.
+        if (keys.has(newGroup.key)) {
+          let number = 2;
+          while (keys.has(`${newGroup.key}~${number}`)) number++;
+          newGroup.key = `${newGroup.key}~${number}`;
+        }
         groups.push(newGroup);
-        byKey.set(newGroup.key, newGroup);
+        byPath.set(path, newGroup);
+        keys.add(newGroup.key);
         result.addedFolders++;
         result.addedImages += newGroup.files.length;
         return;
       }
 
+      if (notMerged.has(newGroup)) {
+        result.ignoredFolders++;
+        return;
+      }
+
+      let addedHere = 0;
       const names = new Set(existing.files.map(item => item.name.toLowerCase()));
       newGroup.files.forEach(item => {
         const name = item.name.toLowerCase();
@@ -4182,16 +4776,80 @@ window.STANDALONE_WARNING_MB = 50;
         }
         names.add(name);
         existing.files.push(item);
-        result.addedImages++;
+        addedHere++;
       });
+      result.addedImages += addedHere;
 
+      let changed = addedHere > 0;
       if (!existing.specification && newGroup.specification) {
         existing.specification = newGroup.specification;
+        changed = true;
       }
+      if (changed) result.mergedFolders++;
     });
 
     return result;
   }
+
+  /* Window asking which existing folders receive the imported images.
+     Resolves with the Set of the new groups NOT to merge, or null when the import is cancelled. */
+  const importConflictModal = document.getElementById('importConflictModal');
+  const importConflictIntro = document.getElementById('importConflictIntro');
+  const importConflictList = document.getElementById('importConflictList');
+  let importConflictResolve = null;
+
+  function askImportConflicts(conflicts) {
+    importConflictIntro.textContent = conflicts.length === 1
+      ? 'This folder of the import already exists in the gallery, with the same categories and the same name. Merge it?'
+      : `${conflicts.length} folders of the import already exist in the gallery, with the same categories and the same name. Choose the ones to merge.`;
+
+    importConflictList.replaceChildren();
+    conflicts.forEach(conflict => {
+      const checkbox = el('input', { type: 'checkbox', checked: true });
+      checkbox.conflict = conflict;
+
+      const parts = [];
+      if (conflict.newImages) parts.push(plural(conflict.newImages, 'new image'));
+      if (conflict.newSpecification) parts.push('specifications');
+      const details = `${parts.join(' + ')} · ${plural(conflict.existing.files.length, 'image')} in the gallery`;
+
+      importConflictList.append(el('li', {}, el('label', {}, checkbox,
+        el('span', { text: [...getCategories(conflict.existing), conflict.existing.title].join(' / ') },
+          el('small', { text: details })))));
+    });
+
+    return new Promise(resolve => {
+      importConflictResolve = resolve;
+      openModal(importConflictModal);
+      document.getElementById('importConflictOk').focus();
+    });
+  }
+
+  function setAllImportConflicts(checked) {
+    importConflictList.querySelectorAll('input').forEach(checkbox => { checkbox.checked = checked; });
+  }
+
+  document.getElementById('importConflictAll').addEventListener('click', () => setAllImportConflicts(true));
+  document.getElementById('importConflictNone').addEventListener('click', () => setAllImportConflicts(false));
+
+  document.getElementById('importConflictOk').addEventListener('click', () => {
+    const resolve = importConflictResolve;
+    importConflictResolve = null;
+    const notMerged = new Set(
+      Array.from(importConflictList.querySelectorAll('input'))
+        .filter(checkbox => !checkbox.checked)
+        .map(checkbox => checkbox.conflict.newGroup)
+    );
+    closeModal(importConflictModal);
+    if (resolve) resolve(notMerged);
+  });
+
+  importConflictModal.addEventListener('modalclose', () => {
+    if (!importConflictResolve) return;
+    const resolve = importConflictResolve;
+    importConflictResolve = null;
+    resolve(null);
+  });
 
   // Sorts, then rebuilds filters, specification search and gallery.
   function refreshGallery() {
@@ -4220,29 +4878,25 @@ window.STANDALONE_WARNING_MB = 50;
     const total = groups.reduce((sum, group) => sum + group.files.length, 0);
     const specCount = groups.filter(group => group.specification).length;
 
+    const full = `${plural(groups.length, 'folder')} with images · ` +
+      `${plural(total, 'image')} · ` +
+      `${plural(specCount, 'folder')} with specifications`;
+
+    // Short in the top bar, complete in its tooltip and in the Categories panel.
     summary.textContent = groups.length
-      ? `${groups.length} folder${groups.length !== 1 ? 's' : ''} with images · ` +
-        `${total} image${total !== 1 ? 's' : ''} · ` +
-        `${specCount} folder${specCount !== 1 ? 's' : ''} with specifications`
+      ? `${plural(groups.length, 'folder')} · ${plural(total, 'image')}`
       : 'Open the Menu to add a folder.';
+    summary.title = groups.length ? full : '';
+    categoryPanelStats.textContent = groups.length ? full : '';
   }
 
   function sortGroups() {
-    groups.forEach(group => {
-      group.files.sort((a, b) => a.name.localeCompare(b.name, 'en', {
-        numeric: true,
-        sensitivity: 'base'
-      }));
-    });
+    groups.forEach(sortFiles);
+    groups.sort((a, b) => compareText(`${a.categoryPath}/${a.title}`, `${b.categoryPath}/${b.title}`));
+  }
 
-    groups.sort((a, b) => {
-      const aPath = `${a.categoryPath}/${a.title}`;
-      const bPath = `${b.categoryPath}/${b.title}`;
-      return aPath.localeCompare(bPath, 'en', {
-        numeric: true,
-        sensitivity: 'base'
-      });
-    });
+  function sortFiles(group) {
+    group.files.sort((a, b) => compareText(a.name, b.name));
   }
 
   // After a deletion or a category change: categories, search and specification criteria
@@ -4379,7 +5033,14 @@ window.STANDALONE_WARNING_MB = 50;
 
     nextImageNumber = Math.max(Number(meta.nextImageId) || 1, maxNumber + 1);
 
-    applyStoredMention(meta.mention);
+    if (embedded) {
+      // A standalone file carries its settings (older ones only their banner).
+      applyConfig(normalizeConfig(meta.config || { banner: meta.mention || undefined }));
+      savedConfigJson = configJson();
+    } else if (!configFromFile && isPlainObject(meta.mention)) {
+      // Gallery saved before gc_config.js: its banner is taken over, to be saved in gc_config.js.
+      applyConfig(normalizeConfig({ ...serializeConfig(), banner: meta.mention }));
+    }
     refreshGallery();
     savedDataVersion = dataVersion;
     updateUnsavedState();
@@ -4499,12 +5160,28 @@ window.STANDALONE_WARNING_MB = 50;
         saveStatus.textContent =
           `Gallery replaced: ${newGroups.length} folders, ${imageCount} images from “${rootName}”.`;
       } else {
-        const result = mergeGroups(newGroups);
-        if (result.addedImages) markChanged();
+        const conflicts = findImportConflicts(newGroups);
+        let notMerged = new Set();
+        if (conflicts.length) {
+          notMerged = await askImportConflicts(conflicts);
+          if (!notMerged) {
+            saveStatus.textContent = 'Import cancelled.';
+            return;
+          }
+        }
+
+        const result = mergeGroups(newGroups, notMerged);
+        if (result.addedImages || result.mergedFolders) markChanged();
 
         saveStatus.textContent =
-          `${result.addedImages} image${result.addedImages !== 1 ? 's' : ''} added ` +
-          `(${result.addedFolders} new folder${result.addedFolders !== 1 ? 's' : ''})` +
+          `${plural(result.addedImages, 'image')} added ` +
+          `(${plural(result.addedFolders, 'new folder')}` +
+          (result.mergedFolders
+            ? `, ${plural(result.mergedFolders, 'merged folder')}`
+            : '') + ')' +
+          (result.ignoredFolders
+            ? ` · ${plural(result.ignoredFolders, 'existing folder')} left unchanged`
+            : '') +
           (result.skipped ? ` · ${result.skipped} already present` : '') + '.';
       }
 
@@ -4524,6 +5201,7 @@ window.STANDALONE_WARNING_MB = 50;
      user copies them into the data folder next to GalleryCon.html.
 
      All their names start with gc_ so that they are not mistaken for other files.
+     data/gc_config.js          settings (see CONFIGURATION)
      data/gc_specifications.js  folders, categories, specifications and image index
      data/gc_covers-NN.js       first image of each folder (small files: fast first display)
      data/gc_images-NN.js       the other images (loaded when a folder is browsed)
@@ -4554,8 +5232,8 @@ window.STANDALONE_WARNING_MB = 50;
   // are written again. New images fill the last file of their kind, then new files.
   function computeSavePlan() {
     const limits = {
-      covers: megabytes(window.COVERS_FILE_MAX_MB, 10),
-      images: megabytes(window.IMAGES_FILE_MAX_MB, 70)
+      covers: megabytes(config.files.coversMaxMb, 10),
+      images: megabytes(config.files.imagesMaxMb, 70)
     };
 
     const chunks = new Map();
@@ -4651,6 +5329,8 @@ window.STANDALONE_WARNING_MB = 50;
 
     // gc_specifications.js last: it refers to the image files.
     if (specificationsDirty) writes.push({ type: 'specifications', file: 'gc_specifications.js' });
+    // The settings: independent of the other files.
+    if (isConfigDirty()) writes.push({ type: 'config', file: 'gc_config.js' });
 
     return {
       revision,
@@ -4659,6 +5339,7 @@ window.STANDALONE_WARNING_MB = 50;
       itemsById,
       writes,
       toDelete,
+      configJson: configJson(),
       empty: writes.length === 0 && toDelete.length === 0,
       committed: false
     };
@@ -4691,7 +5372,6 @@ window.STANDALONE_WARNING_MB = 50;
       revision: plan.revision,
       savedAt: new Date().toISOString(),
       nextImageId: nextImageNumber,
-      mention: serializeMention(),
       chunks: plan.chunks.map(chunk => ({
         id: chunk.id,
         kind: chunk.kind,
@@ -4764,14 +5444,13 @@ window.STANDALONE_WARNING_MB = 50;
     persistedChunks = committed;
     persistedRevision = plan.revision;
     savedDataVersion = dataVersion;
+    savedConfigJson = plan.configJson;
     updateUnsavedState();
   }
 
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
+    const link = el('a', { href: url, download: filename });
     document.body.append(link);
     link.click();
     link.remove();
@@ -4794,10 +5473,13 @@ window.STANDALONE_WARNING_MB = 50;
     if (write.type === 'specifications') {
       return 'Folders, categories and specifications';
     }
+    if (write.type === 'config') {
+      return 'Settings: display, specification criteria, bottom banner, data files';
+    }
     const chunk = write.chunk;
     const content = chunk.kind === 'covers' ? 'first image of each folder' : 'other images';
     const count = chunk.imageIds.length;
-    return `${chunk.isNew ? 'New' : 'Updated'} · ${count} image${count !== 1 ? 's' : ''} ` +
+    return `${chunk.isNew ? 'New' : 'Updated'} · ${plural(count, 'image')} ` +
       `(${content}) · ≈ ${formatSize(chunk.bytes)}`;
   }
 
@@ -4811,39 +5493,17 @@ window.STANDALONE_WARNING_MB = 50;
     saveAll.hidden = savePlan.empty;
 
     savePlan.writes.forEach(write => {
-      const row = document.createElement('div');
-      row.className = 'save-row';
-
-      const info = document.createElement('div');
-      info.className = 'save-row-info';
-
-      const name = document.createElement('strong');
-      name.textContent = write.file;
-
-      const details = document.createElement('span');
-      details.textContent = describeWrite(write);
-
-      const status = document.createElement('span');
-      status.className = 'save-row-status';
-
-      info.append(name, details, status);
-
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Download';
-      button.addEventListener('click', () => downloadWrite(write));
-
-      row.append(info, button);
+      const status = el('span', { class: 'save-row-status' });
+      const button = makeButton('Download', null, () => downloadWrite(write));
+      const row = el('div', { class: 'save-row' },
+        el('div', { class: 'save-row-info' },
+          el('strong', { text: write.file }), el('span', { text: describeWrite(write) }), status),
+        button);
       saveList.append(row);
       Object.assign(write, { row, status, button });
     });
 
-    saveDeleteList.replaceChildren();
-    savePlan.toDelete.forEach(file => {
-      const line = document.createElement('li');
-      line.textContent = file;
-      saveDeleteList.append(line);
-    });
+    saveDeleteList.replaceChildren(...savePlan.toDelete.map(file => el('li', { text: file })));
     saveDeleteSection.hidden = savePlan.toDelete.length === 0;
 
     openModal(saveModal);
@@ -4865,6 +5525,8 @@ window.STANDALONE_WARNING_MB = 50;
       if (write.type === 'specifications') {
         write.status.textContent = 'Preparing…';
         blob = buildSpecificationsBlob(savePlan);
+      } else if (write.type === 'config') {
+        blob = buildConfigBlob();
       } else {
         blob = await buildChunkBlob(savePlan, write.chunk, (done, total) => {
           write.status.textContent = `Preparing ${done} / ${total}…`;
@@ -4940,7 +5602,7 @@ window.STANDALONE_WARNING_MB = 50;
       items.reduce((sum, item) => sum + item.bytes + ENTRY_OVERHEAD, 0) +
       groups.length * 600;
 
-    const warningBytes = megabytes(window.STANDALONE_WARNING_MB, 50);
+    const warningBytes = megabytes(config.files.standaloneWarningMb, 50);
     if (estimate > warningBytes) {
       const confirmed = await confirmDialog({
         title: 'Large standalone file',
@@ -5009,7 +5671,7 @@ window.STANDALONE_WARNING_MB = 50;
         appVersion: window.APP_VERSION,
         exportedAt: new Date().toISOString(),
         nextImageId: nextImageNumber,
-        mention: serializeMention(),
+        config: serializeConfig(),
         materiels: groups.map(group => ({
           key: group.key,
           title: group.title,
@@ -5079,6 +5741,7 @@ window.STANDALONE_WARNING_MB = 50;
   const editDeleteSelected = document.getElementById('editDeleteSelected');
   const menuEditMode = document.getElementById('menuEditMode');
   const editChangeCategory = document.getElementById('editChangeCategory');
+  const editRename = document.getElementById('editRename');
 
   let editMode = false;
   const selectedKeys = new Set();
@@ -5095,6 +5758,8 @@ window.STANDALONE_WARNING_MB = 50;
     }
     updateEditBar();
     updateMentionBanner();
+    // The edit bar changes the height of the top bar: an open panel follows it.
+    positionFilterPanel();
   }
 
   function syncCardSelection() {
@@ -5109,11 +5774,12 @@ window.STANDALONE_WARNING_MB = 50;
   function updateEditBar() {
     const count = selectedKeys.size;
     editSelectionCount.textContent = count
-      ? `${count} folder${count !== 1 ? 's' : ''} selected`
+      ? `${plural(count, 'folder')} selected`
       : 'No folder selected';
     editDeleteSelected.disabled = count === 0;
     editDeleteSelected.textContent = count ? `Delete (${count})` : 'Delete';
     editClearSelection.disabled = count === 0;
+    editRename.disabled = count !== 1;
     editChangeCategory.disabled = count === 0;
     editChangeCategory.textContent = count ? `Change category (${count})` : 'Change category';
     editSelectShown.textContent = `Select all shown (${visibleGroups.length})`;
@@ -5134,6 +5800,11 @@ window.STANDALONE_WARNING_MB = 50;
 
   editChangeCategory.addEventListener('click', () => {
     openCategoryEditor(groups.filter(group => selectedKeys.has(group.key)));
+  });
+
+  editRename.addEventListener('click', () => {
+    const target = groups.find(group => selectedKeys.has(group.key));
+    if (target && selectedKeys.size === 1) openRenameEditor(target);
   });
 
   /* ----------------------------------------
@@ -5187,10 +5858,7 @@ window.STANDALONE_WARNING_MB = 50;
     });
 
     if (added.length) {
-      group.files.sort((a, b) => a.name.localeCompare(b.name, 'en', {
-        numeric: true,
-        sensitivity: 'base'
-      }));
+      sortFiles(group);
       markChanged();
       updateSummary();
       viewerIndex = group.files.indexOf(added[0]);
@@ -5200,7 +5868,7 @@ window.STANDALONE_WARNING_MB = 50;
     }
 
     saveStatus.textContent =
-      `${added.length} image${added.length !== 1 ? 's' : ''} added to “${group.title}”` +
+      `${plural(added.length, 'image')} added to “${group.title}”` +
       (skipped ? ` · ${skipped} already present` : '') +
       (ignored ? ` · ${ignored} not an image` : '') + '.';
   });
@@ -5271,9 +5939,7 @@ window.STANDALONE_WARNING_MB = 50;
       const parts = getCategories(group);
       for (let i = 1; i <= parts.length; i++) paths.add(parts.slice(0, i).join('/'));
     });
-    return Array.from(paths).sort((a, b) =>
-      a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' })
-    );
+    return Array.from(paths).sort(compareText);
   }
 
   function openCategoryEditor(targets) {
@@ -5284,12 +5950,7 @@ window.STANDALONE_WARNING_MB = 50;
       ? `Folder: ${targets[0].title}`
       : `${targets.length} selected folders`;
 
-    categoryList.replaceChildren();
-    existingCategoryPaths().forEach(path => {
-      const option = document.createElement('option');
-      option.value = formatCategoryPath(path);
-      categoryList.append(option);
-    });
+    fillDatalist(categoryList, existingCategoryPaths().map(formatCategoryPath));
 
     const shared = targets.every(group => group.categoryPath === targets[0].categoryPath)
       ? targets[0].categoryPath
@@ -5304,11 +5965,7 @@ window.STANDALONE_WARNING_MB = 50;
 
   function saveCategory() {
     const path = parseCategoryPath(categoryInput.value);
-    if (!path) {
-      categoryError.textContent = 'Enter at least one category.';
-      categoryError.hidden = false;
-      return;
-    }
+    if (!path) return showFieldError(categoryError, 'Enter at least one category.');
 
     closeModal(categoryModal);
     const changed = categoryTargets.filter(group => group.categoryPath !== path);
@@ -5326,16 +5983,67 @@ window.STANDALONE_WARNING_MB = 50;
     if (viewerGroup) renderViewerMeta();
 
     saveStatus.textContent =
-      `${changed.length} folder${changed.length !== 1 ? 's' : ''} moved to “${formatCategoryPath(path)}”.`;
+      `${plural(changed.length, 'folder')} moved to “${formatCategoryPath(path)}”.`;
   }
 
   document.getElementById('categorySave').addEventListener('click', saveCategory);
-  categoryInput.addEventListener('keydown', event => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      saveCategory();
-    }
-  });
+
+  /* ----------------------------------------
+     RENAME A FOLDER (edit mode)
+     Only the name shown in the gallery changes: the key of the folder (its path in the
+     source tree) stays the same, so its images and saved files keep pointing to it.
+  ---------------------------------------- */
+
+  const renameModal = document.getElementById('renameModal');
+  const renameModalTarget = document.getElementById('renameModalTarget');
+  const renameInput = document.getElementById('renameInput');
+  const renameError = document.getElementById('renameError');
+  let renameTarget = null;
+
+  function openRenameEditor(group) {
+    if (!group || !editMode) return;
+    renameTarget = group;
+    const category = formatCategoryPath(group.categoryPath);
+    renameModalTarget.textContent = category
+      ? `Folder “${group.title}” in ${category}`
+      : `Folder “${group.title}”`;
+    renameInput.value = group.title;
+    renameError.hidden = true;
+    openModal(renameModal);
+    renameInput.focus();
+    renameInput.select();
+  }
+
+  function saveRename() {
+    const group = renameTarget;
+    if (!group) return;
+    const title = renameInput.value.replace(/\s+/g, ' ').trim();
+
+    if (!title) return showFieldError(renameError, 'Enter a name.');
+    if (title.includes('/')) return showFieldError(renameError, 'The name cannot contain “/”.');
+    // Two folders of a category cannot share a name: imports match folders on
+    // their categories and their name.
+    const taken = groups.some(other => other !== group &&
+      galleryPathOf(other) === galleryPathOf({ categoryPath: group.categoryPath, title }));
+    if (taken) return showFieldError(renameError, 'Another folder of this category already has this name.');
+
+    closeModal(renameModal);
+    renameTarget = null;
+    if (title === group.title) return;
+
+    const previous = group.title;
+    group.title = title;
+    markChanged();
+    sortGroups();
+    refreshKeepingFilters();
+    if (viewerGroup === group) renderViewerMeta();
+    saveStatus.textContent = `“${previous}” renamed “${title}”.`;
+  }
+
+  document.getElementById('renameSave').addEventListener('click', saveRename);
+  onEnter(renameInput, saveRename);
+  renameModal.addEventListener('modalclose', () => { renameTarget = null; });
+  onEnter(categoryInput, saveCategory);
 
   editDeleteSelected.addEventListener('click', async () => {
     const doomed = groups.filter(group => selectedKeys.has(group.key));
@@ -5343,10 +6051,10 @@ window.STANDALONE_WARNING_MB = 50;
 
     const images = doomed.reduce((sum, group) => sum + group.files.length, 0);
     const confirmed = await confirmDialog({
-      title: `Delete ${doomed.length} folder${doomed.length !== 1 ? 's' : ''}?`,
+      title: `Delete ${plural(doomed.length, 'folder')}?`,
       message:
-        `${doomed.length} folder${doomed.length !== 1 ? 's' : ''} and ${images} ` +
-        `image${images !== 1 ? 's' : ''} will be removed from the gallery.\n` +
+        `${plural(doomed.length, 'folder')} and ${plural(images, 'image')} ` +
+        'will be removed from the gallery.\n' +
         'Your source folders are not affected. The data folder changes only when you copy ' +
         'the files given by “Save changes”.',
       confirmLabel: 'Delete',
@@ -5359,7 +6067,7 @@ window.STANDALONE_WARNING_MB = 50;
     markChanged();
     refreshKeepingFilters();
     saveStatus.textContent =
-      `${doomed.length} folder${doomed.length !== 1 ? 's' : ''} deleted.`;
+      `${plural(doomed.length, 'folder')} deleted.`;
   });
 
   menuEditMode.addEventListener('click', () => {
@@ -5371,11 +6079,10 @@ window.STANDALONE_WARNING_MB = 50;
 
   /* ----------------------------------------
      BOTTOM MENTION BANNER
-     Written in edit mode; turned on as soon as it holds a text.
-     Saved in gc_specifications.js and in the standalone export.
+     Written in edit mode (or in Settings); turned on as soon as it holds a text.
+     Part of the settings: saved in gc_config.js and in the standalone export.
   ---------------------------------------- */
 
-  const MENTION_DEFAULT_COLOR = '#18212b';
   const mentionBanner = document.getElementById('mentionBanner');
   const mentionText = document.getElementById('mentionText');
   const mentionInput = document.getElementById('mentionInput');
@@ -5397,46 +6104,167 @@ window.STANDALONE_WARNING_MB = 50;
     document.body.classList.toggle('has-mention', visible);
   }
 
-  // Data saved with the gallery: nothing when the banner is off.
-  function serializeMention() {
-    const text = mention.text.trim();
-    return text ? { text, color: mention.color } : null;
-  }
-
-  // Restores the banner of a saved gallery, without marking it as changed.
-  function applyStoredMention(stored) {
-    const text = stored && typeof stored.text === 'string' ? stored.text.slice(0, 200) : '';
-    const color = stored && /^#[0-9a-f]{6}$/i.test(stored.color || '')
-      ? stored.color.toLowerCase()
-      : MENTION_DEFAULT_COLOR;
-    mention = { text, color };
-    updateMentionBanner();
-  }
-
   mentionInput.addEventListener('input', () => {
     if (!editMode) return;
     mention.text = mentionInput.value;
-    markChanged();
+    config.banner = { ...config.banner, text: mention.text.slice(0, 200) };
+    updateUnsavedState();
     updateMentionBanner();
   });
 
   mentionColor.addEventListener('input', () => {
     if (!editMode) return;
     mention.color = mentionColor.value.toLowerCase();
-    markChanged();
+    config.banner = { ...config.banner, color: mention.color };
+    updateUnsavedState();
     updateMentionBanner();
   });
 
   updateMentionBanner();
 
   /* ----------------------------------------
+     SETTINGS WINDOW (Menu → Settings, always available)
+     "Save settings" applies them and downloads data/gc_config.js.
+  ---------------------------------------- */
+
+  const settingsModal = document.getElementById('settingsModal');
+  const settingsCardWidth = document.getElementById('settingsCardWidth');
+  const settingsFit = document.getElementById('settingsFit');
+  const settingsShowSpecs = document.getElementById('settingsShowSpecs');
+  const settingsCriteria = document.getElementById('settingsCriteria');
+  const settingsBannerText = document.getElementById('settingsBannerText');
+  const settingsBannerColor = document.getElementById('settingsBannerColor');
+  const settingsCoversMb = document.getElementById('settingsCoversMb');
+  const settingsImagesMb = document.getElementById('settingsImagesMb');
+  const settingsWarningMb = document.getElementById('settingsWarningMb');
+  const settingsError = document.getElementById('settingsError');
+  let settingsCriteriaDraft = []; // ordered list of the ticked criteria
+
+  // Ticked criteria first (in their order), then the others of the gallery.
+  function renderSettingsCriteria() {
+    settingsCriteria.replaceChildren();
+    const others = Array.from(availableSpecifications.keys())
+      .filter(path => !settingsCriteriaDraft.includes(path))
+      .sort((a, b) => compareText(getPropertyOptionLabel(a), getPropertyOptionLabel(b)));
+    const paths = [...settingsCriteriaDraft, ...others];
+
+    if (!paths.length) {
+      settingsCriteria.append(el('p', { class: 'field-hint', text: 'No searchable specification in this gallery yet.' }));
+      return;
+    }
+
+    paths.forEach(path => {
+      const known = availableSpecifications.has(path);
+      const checkbox = el('input', {
+        type: 'checkbox',
+        checked: settingsCriteriaDraft.includes(path),
+        on: {
+          change: () => {
+            const index = settingsCriteriaDraft.indexOf(path);
+            if (checkbox.checked && index === -1) settingsCriteriaDraft.push(path);
+            if (!checkbox.checked && index !== -1) settingsCriteriaDraft.splice(index, 1);
+          }
+        }
+      });
+      settingsCriteria.append(el('label', { class: known ? 'settings-criterion' : 'settings-criterion is-missing' },
+        checkbox,
+        el('span', { text: known ? getPropertyOptionLabel(path) : `${propertyTitle(path)} (not in this gallery)` })));
+    });
+  }
+
+  function fillSettingsForm(source) {
+    settingsCardWidth.value = String(source.display.cardWidth);
+    settingsFit.checked = source.display.fitToWindow;
+    settingsShowSpecs.checked = source.display.showSpecifications;
+    settingsCriteriaDraft = source.search.criteria.slice();
+    renderSettingsCriteria();
+    settingsBannerText.value = source.banner.text;
+    settingsBannerColor.value = source.banner.color;
+    settingsCoversMb.value = String(source.files.coversMaxMb);
+    settingsImagesMb.value = String(source.files.imagesMaxMb);
+    settingsWarningMb.value = String(source.files.standaloneWarningMb);
+    settingsError.hidden = true;
+  }
+
+  function openSettings() {
+    closeModal(menuModal);
+    fillSettingsForm(config);
+    openModal(settingsModal);
+  }
+
+  // Display and criteria as they are now on screen.
+  function useCurrentView() {
+    settingsCardWidth.value = String(galleryCardWidth);
+    settingsFit.checked = fitMode;
+    settingsShowSpecs.checked = !specificationsCollapsed;
+    settingsCriteriaDraft = Array.from(activeSpecificationPaths);
+    renderSettingsCriteria();
+  }
+
+  function saveSettings() {
+    const fail = message => showFieldError(settingsError, message);
+
+    const width = Number(settingsCardWidth.value);
+    if (!Number.isFinite(width) || width < CARD_WIDTH_MIN || width > CARD_WIDTH_MAX) {
+      return fail(`The card size must be between ${CARD_WIDTH_MIN} and ${CARD_WIDTH_MAX} px.`);
+    }
+    const sizes = [settingsCoversMb, settingsImagesMb, settingsWarningMb].map(field => Number(field.value));
+    if (sizes.some(size => !Number.isFinite(size) || size <= 0)) {
+      return fail('The data file sizes must be numbers above 0.');
+    }
+
+    applyConfig(normalizeConfig({
+      display: {
+        cardWidth: width,
+        fitToWindow: settingsFit.checked,
+        showSpecifications: settingsShowSpecs.checked
+      },
+      search: { criteria: settingsCriteriaDraft },
+      banner: { text: settingsBannerText.value, color: settingsBannerColor.value },
+      files: { coversMaxMb: sizes[0], imagesMaxMb: sizes[1], standaloneWarningMb: sizes[2] }
+    }));
+    applyConfiguredCriteria();
+
+    downloadBlob(buildConfigBlob(), 'gc_config.js');
+    savedConfigJson = configJson();
+    updateUnsavedState();
+    closeModal(settingsModal);
+    saveStatus.textContent = 'Settings saved: copy gc_config.js into the data folder.';
+  }
+
+  document.getElementById('menuSettings').addEventListener('click', openSettings);
+  document.getElementById('settingsUseView').addEventListener('click', useCurrentView);
+  document.getElementById('settingsReset').addEventListener('click', () => fillSettingsForm(defaultConfig()));
+  document.getElementById('settingsSave').addEventListener('click', saveSettings);
+
+  /* ----------------------------------------
      STARTUP: EMBEDDED DATA (STANDALONE FILE) OR DATA FOLDER
   ---------------------------------------- */
+
+  // data/gc_config.js (optional) is read first: the criteria and the display depend on it.
+  function loadConfigFile() {
+    return loadScript('data/gc_config.js')
+      .then(() => {
+        const raw = window.GALLERYCON_CONFIG;
+        delete window.GALLERYCON_CONFIG;
+        if (!isPlainObject(raw)) {
+          reportError('Loading', 'data/gc_config.js is not a GalleryCon settings file: default settings used.');
+          return;
+        }
+        applyConfig(normalizeConfig(raw));
+        configFromFile = true;
+        savedConfigJson = configJson();
+      })
+      .catch(() => {
+        // No settings file: default settings.
+      });
+  }
 
   function loadDataFolder() {
     summary.textContent = 'Loading the gallery…';
 
-    loadScript('data/gc_specifications.js')
+    loadConfigFile()
+      .then(() => loadScript('data/gc_specifications.js'))
       .then(() => {
         const meta = window.GALLERYCON_SPECIFICATIONS;
         delete window.GALLERYCON_SPECIFICATIONS;
@@ -5451,6 +6279,7 @@ window.STANDALONE_WARNING_MB = 50;
       .catch(() => {
         // No data folder yet: empty gallery.
         summary.textContent = 'Open the Menu to add a folder.';
+        updateUnsavedState();
       });
   }
 
@@ -5492,7 +6321,10 @@ window.STANDALONE_WARNING_MB = 50;
      TEXT SEARCH
   ---------------------------------------- */
 
-  search.addEventListener('input', renderGallery);
+  search.addEventListener('input', () => {
+    renderActiveFilters();
+    renderGallery();
+  });
 
 })();
 </script>

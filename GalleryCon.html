@@ -2345,7 +2345,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   applyGalleryCardWidth();
 
   let groups = [];
-  let objectUrls = [];
+  const objectUrls = new Set(); // URLs of the images shown, released with them
   let viewerGroup = null;
   let viewerIndex = 0;
 
@@ -3099,33 +3099,34 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     return true;
   }
 
-  function matchesSpecificationFilters(group) {
-    if (!matchesCountryFilters(group)) return false;
-
-    const activePaths = Array.from(activeSpecificationPaths);
-
-    for (const path of activePaths) {
+  // Numerical criteria with a target, read once per render: [{ path, target, tolerance }],
+  // or null when one of them is not a valid number (then no folder matches).
+  function readNumericCriteria() {
+    const criteria = [];
+    for (const path of activeSpecificationPaths) {
       const criterion = specificationValues[path];
       if (!criterion || criterion.value === '') continue;
 
       const target = Number(criterion.value);
       const tolerance = criterion.tolerance === '' ? 0 : Number(criterion.tolerance);
+      if (!Number.isFinite(target) || !Number.isFinite(tolerance) || tolerance < 0) return null;
 
-      if (!Number.isFinite(target) || !Number.isFinite(tolerance) || tolerance < 0) {
-        return false;
-      }
-
-      const values = getGroupNumericValues(group);
-      if (!values) return false;
-
-      const property = values.get(path);
-
-      if (!property) return false;
-
-      if (Math.abs(property.value - target) > tolerance) return false;
+      criteria.push({ path, target, tolerance });
     }
+    return criteria;
+  }
 
-    return true;
+  function matchesSpecificationFilters(group, criteria) {
+    if (criteria === null || !matchesCountryFilters(group)) return false;
+    if (!criteria.length) return true;
+
+    const values = getGroupNumericValues(group);
+    if (!values) return false;
+
+    return criteria.every(({ path, target, tolerance }) => {
+      const property = values.get(path);
+      return Boolean(property) && Math.abs(property.value - target) <= tolerance;
+    });
   }
 
   /* ----------------------------------------
@@ -3964,12 +3965,33 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   ---------------------------------------- */
 
   const BATCH_SIZE = 50;
+  const SEARCH_DELAY_MS = 150; // text search: pause in the typing before the gallery follows
+  let searchTimer = 0;
   let visibleGroups = [];
   let renderedCount = 0;
   let galleryObserver = null;
   let categorySections = new Map();
   let loadMoreSentinel = null;
   let fallbackScrollHandler = null;
+
+  // The image names never change: each is put in lower case once.
+  const searchNames = new WeakMap();
+
+  function searchName(item) {
+    let name = searchNames.get(item);
+    if (name === undefined) {
+      name = String(item.name || '').toLocaleLowerCase('en');
+      searchNames.set(item, name);
+    }
+    return name;
+  }
+
+  // Text search: folder name, categories and image names.
+  function matchesSearch(group, term) {
+    if (!term) return true;
+    const folder = `${group.title || ''} ${group.categoryPath || ''}`.toLocaleLowerCase('en');
+    return folder.includes(term) || group.files.some(item => searchName(item).includes(term));
+  }
 
   function createGalleryCard(group) {
     let index = 0;
@@ -4094,20 +4116,14 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     categorySections = new Map();
     renderedCount = 0;
 
+    clearTimeout(searchTimer);
     const term = search.value.trim().toLocaleLowerCase('en');
+    const criteria = readNumericCriteria();
 
-    visibleGroups = groups.filter(group => {
-      if (!matchesFilters(group)) return false;
-      if (!matchesSpecificationFilters(group)) return false;
-
-      const searchableText = [
-        group.title || '',
-        group.categoryPath || '',
-        ...group.files.map(file => file.name || '')
-      ].join(' ').toLocaleLowerCase('en');
-
-      return searchableText.includes(term);
-    });
+    visibleGroups = groups.filter(group =>
+      matchesFilters(group) &&
+      matchesSpecificationFilters(group, criteria) &&
+      matchesSearch(group, term));
 
     updateResultCount();
     updateEditBar();
@@ -4323,7 +4339,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     const blob = await getImageBlob(item);
     if (!item.url) {
       item.url = URL.createObjectURL(blob);
-      objectUrls.push(item.url);
+      objectUrls.add(item.url);
     }
     return item.url;
   }
@@ -4700,8 +4716,21 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
   function replaceGroups(newGroups) {
     objectUrls.forEach(url => URL.revokeObjectURL(url));
-    objectUrls = [];
+    objectUrls.clear();
     groups = newGroups;
+  }
+
+  // Frees the memory of images removed from the gallery (their data stays in the files).
+  function releaseImages(items) {
+    items.forEach(item => {
+      if (item.url) {
+        URL.revokeObjectURL(item.url);
+        objectUrls.delete(item.url);
+      }
+      item.url = '';
+      item.blob = null;
+      item.blobPromise = null;
+    });
   }
 
   // Identifies a folder by its categories and its name, as shown in the gallery
@@ -5760,8 +5789,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
   // Rebuilds the card of a folder in place (its first image may have changed).
   function refreshCard(group) {
-    const card = Array.from(gallery.querySelectorAll('.card'))
-      .find(element => element.dataset.key === group.key);
+    const card = gallery.querySelector(`.card[data-key="${CSS.escape(group.key)}"]`);
     if (card) card.replaceWith(createGalleryCard(group));
   }
 
@@ -5835,6 +5863,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     if (last) {
       closeViewer();
       groups = groups.filter(candidate => candidate !== group);
+      releaseImages(group.files);
       selectedKeys.delete(group.key);
       markChanged();
       refreshGallery({ keepFilters: true });
@@ -5842,7 +5871,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       return;
     }
 
-    group.files.splice(viewerIndex, 1);
+    releaseImages(group.files.splice(viewerIndex, 1));
     viewerIndex = Math.min(viewerIndex, group.files.length - 1);
     markChanged();
     updateSummary();
@@ -6000,6 +6029,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     if (!confirmed) return;
 
     groups = groups.filter(group => !selectedKeys.has(group.key));
+    doomed.forEach(group => releaseImages(group.files));
     selectedKeys.clear();
     markChanged();
     refreshGallery({ keepFilters: true });
@@ -6258,9 +6288,11 @@ const GALLERYCON_DEFAULTS = Object.freeze({
      TEXT SEARCH
   ---------------------------------------- */
 
+  // The chips follow each key; the gallery waits for a short pause in the typing.
   search.addEventListener('input', () => {
     renderActiveFilters();
-    renderGallery();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderGallery, SEARCH_DELAY_MS);
   });
 
 })();

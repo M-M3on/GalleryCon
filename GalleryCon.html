@@ -3124,18 +3124,6 @@ const GALLERYCON_DEFAULTS = Object.freeze({
      SPECIFICATION DISPLAY IN VIEWER
   ---------------------------------------- */
 
-  function countSpecificationLeaves(value) {
-    if (Array.isArray(value)) {
-      return value.reduce((sum, item) => sum + countSpecificationLeaves(item), 0);
-    }
-    if (isPlainObject(value)) {
-      return Object.entries(value)
-        .filter(([key]) => key !== 'unit')
-        .reduce((sum, [, child]) => sum + countSpecificationLeaves(child), 0);
-    }
-    return 1;
-  }
-
   function formatSpecValue(value, unit) {
     if (value === null) return 'null';
     if (typeof value === 'boolean') return value ? 'true' : 'false';
@@ -4078,6 +4066,9 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       }
 
       gallery.append(loadMoreSentinel);
+      // Observed again: a new observation always reports its state, so a sentinel still in
+      // sight after this batch (large window, small cards) loads the next one too.
+      galleryObserver.unobserve(loadMoreSentinel);
       galleryObserver.observe(loadMoreSentinel);
     } else if (loadMoreSentinel) {
       loadMoreSentinel.remove();
@@ -4197,7 +4188,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   async function readScriptChunk(source) {
     try {
       await loadScript(source.src);
-    } catch (error) {
+    } catch {
       throw new Error(`data/${source.file} could not be loaded: copy it into the data folder next to GalleryCon.html.`);
     }
 

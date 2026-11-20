@@ -104,15 +104,6 @@ h1 {
   letter-spacing: -.04em;
 }
 .subtitle { margin: 6px 0 0; color: var(--muted); }
-.header-copyright {
-  position: absolute;
-  right: max(22px, calc((100vw - 1440px)/2));
-  bottom: 7px;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1;
-  opacity: .8;
-}
 .app-version,
 .app-author {
   margin-left: 8px;
@@ -625,7 +616,7 @@ img.is-pending,
   font-size: 13px;
 }
 #viewerStage.is-missing::after { color: rgba(255,255,255,.6); }
-button, .pick-label {
+button {
   border: 0;
   border-radius: 11px;
   padding: 11px 16px;
@@ -636,7 +627,7 @@ button, .pick-label {
   cursor: pointer;
   transition: transform .15s, opacity .15s, background .15s;
 }
-button:hover, .pick-label:hover {
+button:hover {
   background: var(--accent-light);
   color: var(--accent);
 }
@@ -3969,10 +3960,13 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   let searchTimer = 0;
   let visibleGroups = [];
   let renderedCount = 0;
-  let galleryObserver = null;
   let categorySections = new Map();
   let loadMoreSentinel = null;
-  let fallbackScrollHandler = null;
+
+  // The next batch is added when the end of the gallery comes within 700 px.
+  const galleryObserver = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) appendNextGalleryBatch();
+  }, { rootMargin: '700px 0px' });
 
   // The image names never change: each is put in lower case once.
   const searchNames = new WeakMap();
@@ -4084,7 +4078,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       }
 
       gallery.append(loadMoreSentinel);
-      if (galleryObserver) galleryObserver.observe(loadMoreSentinel);
+      galleryObserver.observe(loadMoreSentinel);
     } else if (loadMoreSentinel) {
       loadMoreSentinel.remove();
     }
@@ -4103,13 +4097,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   }
 
   function renderGallery() {
-    if (galleryObserver) galleryObserver.disconnect();
-    galleryObserver = null;
-
-    if (fallbackScrollHandler) {
-      window.removeEventListener('scroll', fallbackScrollHandler);
-      fallbackScrollHandler = null;
-    }
+    galleryObserver.disconnect();
 
     if (loadMoreSentinel) loadMoreSentinel.remove();
     loadMoreSentinel = null;
@@ -4136,45 +4124,6 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     }
 
     appendNextGalleryBatch();
-
-    if ('IntersectionObserver' in window && renderedCount < visibleGroups.length) {
-      galleryObserver = new IntersectionObserver(entries => {
-        if (entries.some(entry => entry.isIntersecting)) {
-          appendNextGalleryBatch();
-        }
-      }, { root: null, rootMargin: '700px 0px', threshold: 0 });
-
-      if (loadMoreSentinel) galleryObserver.observe(loadMoreSentinel);
-    } else if (renderedCount < visibleGroups.length) {
-      /*
-       * Fallback for browsers without IntersectionObserver.
-       * Load additional batches immediately while the page does not
-       * contain enough content to make scrolling possible.
-       */
-      fallbackScrollHandler = () => {
-        while (
-          renderedCount < visibleGroups.length &&
-          window.innerHeight + window.scrollY >=
-            document.documentElement.scrollHeight - 700
-        ) {
-          const previousCount = renderedCount;
-          appendNextGalleryBatch();
-
-          // Safety check: stop if a batch did not advance the counter.
-          if (renderedCount === previousCount) break;
-        }
-
-        if (renderedCount >= visibleGroups.length) {
-          window.removeEventListener('scroll', fallbackScrollHandler);
-          fallbackScrollHandler = null;
-        }
-      };
-
-      window.addEventListener('scroll', fallbackScrollHandler, { passive: true });
-
-      // Run once immediately so short pages are filled without requiring a scroll.
-      fallbackScrollHandler();
-    }
   }
 
   /* ----------------------------------------
@@ -5048,17 +4997,6 @@ const GALLERYCON_DEFAULTS = Object.freeze({
      The selected folders are read only: they are never modified.
   ---------------------------------------- */
 
-  async function readTextFile(file) {
-    if (typeof file.text === 'function') return file.text();
-
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(reader.error || new Error(`Could not read ${file.name}`));
-      reader.readAsText(file);
-    });
-  }
-
   function readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -5106,7 +5044,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
         }
 
         try {
-          specificationRecords.push({ relativePath, rawText: await readTextFile(file) });
+          specificationRecords.push({ relativePath, rawText: await file.text() });
         } catch (error) {
           specificationRecords.push({
             relativePath,

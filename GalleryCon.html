@@ -24,6 +24,8 @@ Version 3.0
   with a click outside or Escape. Everything about specifications is green.
   The specification search adds a criterion from one list, shows one line per criterion and
   keeps its explanations behind "?". "Hide filters" is gone.
+  A length written in a nested object without a length unit is no longer searchable, like in
+  the { name, value, units } lists: the unit is never guessed.
 - Settings gathered in data/gc_config.js (and in the standalone export), apart from the folder
   data: display at opening (card size, "Fit to window", specifications shown in the viewer),
   specification criteria shown at opening (the ones added by hand included; never the values),
@@ -2196,14 +2198,15 @@ document.querySelectorAll('.app-version-number').forEach(element => {
   element.textContent = window.APP_VERSION;
 });
 // Default settings, used when data/gc_config.js is missing (Menu → Settings writes it).
-window.GALLERY_CARD_DEFAULT_WIDTH = 260;
-window.MODAL_FIT_TO_WINDOW_DEFAULT = false;
-
-// Maximum size of the files of the data folder (base64 included), in MB.
-window.COVERS_FILE_MAX_MB = 10;   // gc_covers-NN.js: first image of each folder, loaded while scrolling
-window.IMAGES_FILE_MAX_MB = 70;   // gc_images-NN.js: other images, loaded when a folder is browsed
-// Above this size, the standalone export asks for a confirmation.
-window.STANDALONE_WARNING_MB = 50;
+const GALLERYCON_DEFAULTS = Object.freeze({
+  cardWidth: 260,              // card size, 260 to 560 px
+  fitToWindow: false,          // viewer: "Fit to window" at opening
+  showSpecifications: true,    // viewer: specifications panel shown at opening
+  // Maximum size of the files of the data folder (base64 included), in MB.
+  coversMaxMb: 10,             // gc_covers-NN.js: first image of each folder, loaded while scrolling
+  imagesMaxMb: 70,             // gc_images-NN.js: other images, loaded when a folder is browsed
+  standaloneWarningMb: 50      // above this size, the standalone export asks for a confirmation
+});
 
 (() => {
   // Taken before anything is rendered: base of the standalone export.
@@ -2323,8 +2326,7 @@ window.STANDALONE_WARNING_MB = 50;
   const CARD_WIDTH_STEP = 40;
   const clampCardWidth = width => Math.min(CARD_WIDTH_MAX, Math.max(CARD_WIDTH_MIN, Math.round(width)));
 
-  const DEFAULT_CARD_WIDTH = clampCardWidth(Number(window.GALLERY_CARD_DEFAULT_WIDTH) || CARD_WIDTH_MIN);
-  let galleryCardWidth = DEFAULT_CARD_WIDTH;
+  let galleryCardWidth = clampCardWidth(GALLERYCON_DEFAULTS.cardWidth);
 
   function applyGalleryCardWidth() {
     document.documentElement.style.setProperty('--gallery-card-min-width', `${galleryCardWidth}px`);
@@ -2348,8 +2350,8 @@ window.STANDALONE_WARNING_MB = 50;
   let viewerIndex = 0;
 
   // Current view of the viewer (its value at opening comes from the settings, see CONFIGURATION).
-  let fitMode = Boolean(window.MODAL_FIT_TO_WINDOW_DEFAULT);
-  let specificationsCollapsed = false;
+  let fitMode = GALLERYCON_DEFAULTS.fitToWindow;
+  let specificationsCollapsed = !GALLERYCON_DEFAULTS.showSpecifications;
 
   let selections = [];
   let maxDepth = 0;
@@ -2385,16 +2387,16 @@ window.STANDALONE_WARNING_MB = 50;
   function defaultConfig() {
     return {
       display: {
-        cardWidth: DEFAULT_CARD_WIDTH,
-        fitToWindow: Boolean(window.MODAL_FIT_TO_WINDOW_DEFAULT),
-        showSpecifications: true
+        cardWidth: clampCardWidth(GALLERYCON_DEFAULTS.cardWidth),
+        fitToWindow: GALLERYCON_DEFAULTS.fitToWindow,
+        showSpecifications: GALLERYCON_DEFAULTS.showSpecifications
       },
       search: { criteria: DEFAULT_SPEC_PATHS.slice() },
       banner: { text: '', color: MENTION_DEFAULT_COLOR },
       files: {
-        coversMaxMb: positiveNumber(window.COVERS_FILE_MAX_MB, 10),
-        imagesMaxMb: positiveNumber(window.IMAGES_FILE_MAX_MB, 70),
-        standaloneWarningMb: positiveNumber(window.STANDALONE_WARNING_MB, 50)
+        coversMaxMb: GALLERYCON_DEFAULTS.coversMaxMb,
+        imagesMaxMb: GALLERYCON_DEFAULTS.imagesMaxMb,
+        standaloneWarningMb: GALLERYCON_DEFAULTS.standaloneWarningMb
       }
     };
   }
@@ -2480,16 +2482,8 @@ window.STANDALONE_WARNING_MB = 50;
 
   // Shows the configured criteria in the specification search (values already typed are kept).
   function applyConfiguredCriteria() {
-    const previousValues = specificationValues;
-    activeSpecificationPaths = new Set(
-      config.search.criteria.filter(path => availableSpecifications.has(path))
-    );
-    specificationValues = {};
-    activeSpecificationPaths.forEach(path => {
-      specificationValues[path] = previousValues[path] || { value: '', tolerance: '' };
-    });
-    renderSpecificationFilters();
-    renderGallery();
+    setActiveCriteria(config.search.criteria, specificationValues);
+    onSpecificationFiltersChanged();
   }
 
   /* ----------------------------------------
@@ -2608,9 +2602,8 @@ window.STANDALONE_WARNING_MB = 50;
       const tolerance = criterion.tolerance === '' ? '' : ` ± ${criterion.tolerance}`;
       const detail = `${criterion.value}${tolerance}${unit ? ` ${unit}` : ''}`;
       addChip(propertyTitle(path), detail, `${propertyTitle(path)} ${detail}`, () => {
-        specificationValues[path] = { value: '', tolerance: '' };
-        renderSpecificationFilters();
-        renderGallery();
+        specificationValues[path] = emptyCriterion();
+        onSpecificationFiltersChanged();
       }, 'spec');
     });
 
@@ -2619,8 +2612,7 @@ window.STANDALONE_WARNING_MB = 50;
         specificationCountValue++;
         addChip(country, key === 'origin' ? '(origin)' : '(user)', `${title}: ${country}`, () => {
           countrySelection[key].delete(country);
-          renderSpecificationFilters();
-          renderGallery();
+          onSpecificationFiltersChanged();
         }, 'spec');
       });
     });
@@ -2641,14 +2633,9 @@ window.STANDALONE_WARNING_MB = 50;
   function clearEveryFilter() {
     search.value = '';
     selections = selections.map(() => []);
-    activeSpecificationPaths.forEach(path => {
-      specificationValues[path] = { value: '', tolerance: '' };
-    });
-    countrySelection = { origin: new Set(), proliferation: new Set() };
+    clearSpecificationCriteria();
     renderFilters();
-    renderSpecificationFilters();
-    renderFilterSummary();
-    renderGallery();
+    onSpecificationFiltersChanged();
   }
 
   specificationInfo.addEventListener('click', () => {
@@ -2732,12 +2719,14 @@ window.STANDALONE_WARNING_MB = 50;
     return Object.prototype.hasOwnProperty.call(LENGTH_TO_METRES, key) ? LENGTH_TO_METRES[key] : null;
   }
 
+  // Same rule for the ODIN lists and the nested objects: a length is converted to metres,
+  // a length without a known length unit is left out of the search.
   function normaliseNumber(key, value, unit) {
     const factor = lengthFactor(unit);
     if (factor !== null) {
       return { value: Math.round(value * factor * 1e6) / 1e6, unit: 'm' };
     }
-    if (LENGTH_KEYS.has(key)) return null;
+    if (LENGTH_KEYS.has(String(key).toLowerCase())) return null;
     return { value, unit: unit || '' };
   }
 
@@ -2780,10 +2769,8 @@ window.STANDALONE_WARNING_MB = 50;
       const path = prefix ? `${prefix}.${key}` : key;
 
       if (typeof child === 'number' && Number.isFinite(child)) {
-        const factor = lengthFactor(ownUnit);
-        output.set(path, factor === null
-          ? { value: child, unit: ownUnit || '' }
-          : { value: Math.round(child * factor * 1e6) / 1e6, unit: 'm' });
+        const normalised = normaliseNumber(key, child, ownUnit);
+        if (normalised) output.set(path, normalised);
       } else if (child !== null && typeof child === 'object') {
         getNumericValues(child, path, ownUnit, output);
       }
@@ -2817,8 +2804,37 @@ window.STANDALONE_WARNING_MB = 50;
     { key: 'origin', title: 'Origin country', placeholder: 'Origin country' },
     { key: 'proliferation', title: 'User country', placeholder: 'User country' }
   ];
-  let countryCatalog = { origin: [], proliferation: [] };
-  let countrySelection = { origin: new Set(), proliferation: new Set() };
+  // { origin: <value of make()>, proliferation: … }
+  const byCountryField = make => Object.fromEntries(COUNTRY_FIELDS.map(({ key }) => [key, make(key)]));
+  const emptyCountrySelection = () => byCountryField(() => new Set());
+
+  let countryCatalog = byCountryField(() => []);
+  let countrySelection = emptyCountrySelection();
+
+  // Value typed for a numerical criterion ('' = ignored).
+  const emptyCriterion = () => ({ value: '', tolerance: '' });
+
+  // Shows these criteria (those the gallery has), keeping the values found in `previousValues`.
+  function setActiveCriteria(paths, previousValues = {}) {
+    activeSpecificationPaths = new Set(Array.from(paths).filter(path => availableSpecifications.has(path)));
+    specificationValues = {};
+    activeSpecificationPaths.forEach(path => {
+      specificationValues[path] = previousValues[path] || emptyCriterion();
+    });
+  }
+
+  // Empties the values and the countries; the criteria stay shown.
+  function clearSpecificationCriteria() {
+    activeSpecificationPaths.forEach(path => {
+      specificationValues[path] = emptyCriterion();
+    });
+    countrySelection = emptyCountrySelection();
+  }
+
+  function onSpecificationFiltersChanged() {
+    renderSpecificationFilters();
+    renderGallery();
+  }
 
   function hasAnySpecification() {
     return groups.some(group => group.specification && group.specification.data);
@@ -2832,7 +2848,7 @@ window.STANDALONE_WARNING_MB = 50;
     const previousCountries = countrySelection;
 
     availableSpecifications = new Map();
-    const countries = { origin: new Set(), proliferation: new Set() };
+    const countries = emptyCountrySelection();
 
     groups.forEach(group => {
       if (!group.specification || !group.specification.data) return;
@@ -2858,34 +2874,15 @@ window.STANDALONE_WARNING_MB = 50;
       });
     });
 
-    countryCatalog = {
-      origin: Array.from(countries.origin).sort(compareText),
-      proliferation: Array.from(countries.proliferation).sort(compareText)
-    };
+    countryCatalog = byCountryField(key => Array.from(countries[key]).sort(compareText));
 
     if (preserve && hadCatalog) {
-      countrySelection = {
-        origin: new Set(Array.from(previousCountries.origin)
-          .filter(value => countryCatalog.origin.includes(value))),
-        proliferation: new Set(Array.from(previousCountries.proliferation)
-          .filter(value => countryCatalog.proliferation.includes(value)))
-      };
-      activeSpecificationPaths = new Set(
-        Array.from(previousPaths).filter(path => availableSpecifications.has(path))
-      );
-      specificationValues = {};
-      activeSpecificationPaths.forEach(path => {
-        specificationValues[path] = previousValues[path] || { value: '', tolerance: '' };
-      });
+      countrySelection = byCountryField(key => new Set(
+        Array.from(previousCountries[key]).filter(value => countryCatalog[key].includes(value))));
+      setActiveCriteria(previousPaths, previousValues);
     } else {
-      countrySelection = { origin: new Set(), proliferation: new Set() };
-      activeSpecificationPaths = new Set(
-        config.search.criteria.filter(path => availableSpecifications.has(path))
-      );
-      specificationValues = {};
-      activeSpecificationPaths.forEach(path => {
-        specificationValues[path] = { value: '', tolerance: '' };
-      });
+      countrySelection = emptyCountrySelection();
+      setActiveCriteria(config.search.criteria);
     }
 
     renderSpecificationFilters();
@@ -2929,13 +2926,6 @@ window.STANDALONE_WARNING_MB = 50;
     return `${propertyTitle(path)}${unit ? ` ${unit}` : ''}`;
   }
 
-  /* ---- Recap of the active technical criteria (under the category recap) */
-
-  // The active criteria are shown as chips in the top bar.
-  function renderSpecificationSummary() {
-    renderActiveFilters();
-  }
-
   /* ---- Country criteria */
 
   function addCountry(key, raw) {
@@ -2963,8 +2953,7 @@ window.STANDALONE_WARNING_MB = 50;
     const chips = el('div', { class: 'spec-chips' },
       ...Array.from(countrySelection[key], value => makeButton(value, 'spec-chip', () => {
         countrySelection[key].delete(value);
-        renderSpecificationFilters();
-        renderGallery();
+        onSpecificationFiltersChanged();
       }, { attrs: { 'aria-label': `Remove ${value}` } })));
 
     const commit = () => {
@@ -2991,7 +2980,7 @@ window.STANDALONE_WARNING_MB = 50;
     if (!groups.length || !hasAnySpecification()) {
       specificationFilters.hidden = true;
       setFilterButtonAvailable(specificationsButton, false);
-      renderSpecificationSummary();
+      renderActiveFilters();
       return;
     }
 
@@ -3018,7 +3007,7 @@ window.STANDALONE_WARNING_MB = 50;
         on: {
           input: () => {
             specificationValues[path].value = valueInput.value;
-            renderSpecificationSummary();
+            renderActiveFilters();
             renderGallery();
           }
         }
@@ -3035,7 +3024,7 @@ window.STANDALONE_WARNING_MB = 50;
         on: {
           input: () => {
             specificationValues[path].tolerance = toleranceInput.value;
-            renderSpecificationSummary();
+            renderActiveFilters();
             renderGallery();
           }
         }
@@ -3044,8 +3033,7 @@ window.STANDALONE_WARNING_MB = 50;
       const remove = makeButton('×', 'spec-remove', () => {
         activeSpecificationPaths.delete(path);
         delete specificationValues[path];
-        renderSpecificationFilters();
-        renderGallery();
+        onSpecificationFiltersChanged();
       }, { title: 'Remove this criterion', attrs: { 'aria-label': `Remove the criterion ${title}` } });
 
       specificationCriteria.append(el('div', { class: 'spec-criterion' }, label, valueInput, toleranceInput, remove));
@@ -3080,7 +3068,7 @@ window.STANDALONE_WARNING_MB = 50;
       'means an exact match. Several countries in one field match any of them.' +
       (mixed ? ' Some properties use different units in different folders and are compared as stored.' : '');
 
-    renderSpecificationSummary();
+    renderActiveFilters();
   }
 
   specificationSelect.addEventListener('change', () => {
@@ -3088,21 +3076,16 @@ window.STANDALONE_WARNING_MB = 50;
     if (!path || activeSpecificationPaths.has(path)) return;
 
     activeSpecificationPaths.add(path);
-    specificationValues[path] = { value: '', tolerance: '' };
-    renderSpecificationFilters();
-    renderGallery();
+    specificationValues[path] = emptyCriterion();
+    onSpecificationFiltersChanged();
     const field = Array.from(specificationCriteria.querySelectorAll('input[data-path]'))
       .find(input => input.dataset.path === path);
     if (field) field.focus();
   });
 
   clearSpecifications.addEventListener('click', () => {
-    activeSpecificationPaths.forEach(path => {
-      specificationValues[path] = { value: '', tolerance: '' };
-    });
-    countrySelection = { origin: new Set(), proliferation: new Set() };
-    renderSpecificationFilters();
-    renderGallery();
+    clearSpecificationCriteria();
+    onSpecificationFiltersChanged();
   });
 
   function matchesCountryFilters(group) {
@@ -3767,9 +3750,7 @@ window.STANDALONE_WARNING_MB = 50;
     viewerIndex = index;
     specEditor = null;
 
-    viewer.classList.toggle('fit-mode', fitMode);
-    viewerFit.textContent = fitMode ? 'Natural size' : 'Fit to window';
-
+    applyFitMode();
     renderViewerMeta();
 
     viewer.classList.add('open');
@@ -3821,11 +3802,14 @@ window.STANDALONE_WARNING_MB = 50;
   viewerPrev.addEventListener('click', () => stepViewer(-1));
   viewerNext.addEventListener('click', () => stepViewer(1));
 
-  viewerFit.addEventListener('click', () => {
-    fitMode = !fitMode;
-
+  function applyFitMode() {
     viewer.classList.toggle('fit-mode', fitMode);
     viewerFit.textContent = fitMode ? 'Natural size' : 'Fit to window';
+  }
+
+  viewerFit.addEventListener('click', () => {
+    fitMode = !fitMode;
+    applyFitMode();
   });
 
   viewer.addEventListener('click', event => {
@@ -3859,7 +3843,7 @@ window.STANDALONE_WARNING_MB = 50;
   ---------------------------------------- */
 
   function getCategories(group) {
-    return (group.categoryPath || group.path || '').split('/').filter(Boolean);
+    return (group.categoryPath || '').split('/').filter(Boolean);
   }
 
   function selectedAt(level) {
@@ -3923,7 +3907,7 @@ window.STANDALONE_WARNING_MB = 50;
 
     pruneDescendants(level);
     renderFilters();
-    renderFilterSummary();
+    renderActiveFilters();
     renderGallery();
   }
 
@@ -3957,14 +3941,6 @@ window.STANDALONE_WARNING_MB = 50;
     }
 
     setFilterButtonAvailable(categoriesButton, filtersContainer.children.length > 0);
-  }
-
-  /* ----------------------------------------
-     FILTER SUMMARY
-  ---------------------------------------- */
-
-  function renderFilterSummary() {
-    renderActiveFilters();
   }
 
   /* ----------------------------------------
@@ -4126,7 +4102,7 @@ window.STANDALONE_WARNING_MB = 50;
 
       const searchableText = [
         group.title || '',
-        group.categoryPath || group.path || '',
+        group.categoryPath || '',
         ...group.files.map(file => file.name || '')
       ].join(' ').toLocaleLowerCase('en');
 
@@ -4237,6 +4213,11 @@ window.STANDALONE_WARNING_MB = 50;
 
   // id -> { id, type: 'script' | 'embedded', file, src, index, revision, promise, images }
   const chunkSources = new Map();
+
+  // Source of a file of the data folder, loaded with <script src>.
+  function scriptChunkSource(chunk) {
+    return { id: chunk.id, type: 'script', file: chunk.file, src: `data/${chunk.file}`, revision: chunk.revision };
+  }
 
   // <script src> works from file:// in every browser, unlike fetch().
   function loadScript(src) {
@@ -4471,12 +4452,39 @@ window.STANDALONE_WARNING_MB = 50;
     });
   });
 
+  // Window answered by a promise: answer(value) closes it with that value; closing it any
+  // other way (cross, [data-close] button, Escape, click outside) gives `cancelValue`.
+  function modalPromise(modal, cancelValue) {
+    let settle = null;
+    const finish = value => {
+      const resolve = settle;
+      settle = null;
+      if (resolve) resolve(value);
+    };
+    modal.addEventListener('modalclose', () => finish(cancelValue));
+    return {
+      open(focusTarget) {
+        return new Promise(resolve => {
+          settle = resolve;
+          openModal(modal);
+          if (focusTarget) focusTarget.focus();
+        });
+      },
+      answer(value) {
+        const resolve = settle;
+        settle = null;
+        closeModal(modal);
+        if (resolve) resolve(value);
+      }
+    };
+  }
+
   const confirmModal = document.getElementById('confirmModal');
   const confirmTitle = document.getElementById('confirmTitle');
   const confirmMessage = document.getElementById('confirmMessage');
   const confirmOk = document.getElementById('confirmOk');
   const confirmCancel = document.getElementById('confirmCancel');
-  let confirmResolve = null;
+  const confirmAnswer = modalPromise(confirmModal, false);
 
   function confirmDialog({ title, message, confirmLabel = 'Continue', cancelLabel = 'Cancel', danger = false }) {
     confirmTitle.textContent = title;
@@ -4484,27 +4492,10 @@ window.STANDALONE_WARNING_MB = 50;
     confirmOk.textContent = confirmLabel;
     confirmCancel.textContent = cancelLabel;
     confirmOk.classList.toggle('button-danger', danger);
-
-    return new Promise(resolve => {
-      confirmResolve = resolve;
-      openModal(confirmModal);
-      confirmOk.focus();
-    });
+    return confirmAnswer.open(confirmOk);
   }
 
-  confirmOk.addEventListener('click', () => {
-    const resolve = confirmResolve;
-    confirmResolve = null;
-    closeModal(confirmModal);
-    if (resolve) resolve(true);
-  });
-
-  confirmModal.addEventListener('modalclose', () => {
-    if (!confirmResolve) return;
-    const resolve = confirmResolve;
-    confirmResolve = null;
-    resolve(false);
-  });
+  confirmOk.addEventListener('click', () => confirmAnswer.answer(true));
 
   /* ----------------------------------------
      MENU AND HELP
@@ -4611,6 +4602,20 @@ window.STANDALONE_WARNING_MB = 50;
     return Number.isFinite(number) ? number : 0;
   }
 
+  // An image of the gallery. Its data comes from `file` (selected folder), `dataUrl` (older
+  // standalone export) or `sourceChunk` (file of the data folder or embedded block, see
+  // IMAGE SOURCES); `storedChunk` is the file of the data folder that holds it.
+  function makeImageItem({ id, name, relativePath, type, bytes, file = null, dataUrl = null,
+                           sourceChunk = null, storedChunk = null }) {
+    return {
+      id, name, relativePath, type, bytes, file, dataUrl, sourceChunk, storedChunk,
+      blob: null,
+      blobPromise: null,
+      url: ''
+    };
+  }
+
+  // New image, from a selected file or from a data URL.
   function createImageItem(record, relativePath) {
     const file = record.file || null;
     const dataUrl = file ? null : (record.dataUrl || null);
@@ -4618,20 +4623,15 @@ window.STANDALONE_WARNING_MB = 50;
       ? (file.type && file.type.startsWith('image/') ? file.type : mimeFromName(record.name))
       : dataUrlType(dataUrl);
 
-    return {
+    return makeImageItem({
       id: newImageId(),
       name: record.name,
       relativePath,
       type,
       bytes: file ? dataUrlLength(file.size, type) : (dataUrl ? dataUrl.length : 0),
       file,
-      dataUrl,
-      sourceChunk: null,
-      storedChunk: null,
-      blob: null,
-      blobPromise: null,
-      url: ''
-    };
+      dataUrl
+    });
   }
 
   // Builds the folders of a selected tree (or of a v1/v2 standalone export).
@@ -4693,7 +4693,6 @@ window.STANDALONE_WARNING_MB = 50;
         key,
         title: value.folderName,
         categoryPath: value.categoryPath,
-        path: value.categoryPath,
         files: value.files,
         specification: specificationMap.get(key) || null
       }));
@@ -4796,7 +4795,8 @@ window.STANDALONE_WARNING_MB = 50;
   const importConflictModal = document.getElementById('importConflictModal');
   const importConflictIntro = document.getElementById('importConflictIntro');
   const importConflictList = document.getElementById('importConflictList');
-  let importConflictResolve = null;
+  const importConflictOk = document.getElementById('importConflictOk');
+  const importConflictAnswer = modalPromise(importConflictModal, null);
 
   function askImportConflicts(conflicts) {
     importConflictIntro.textContent = conflicts.length === 1
@@ -4818,11 +4818,7 @@ window.STANDALONE_WARNING_MB = 50;
           el('small', { text: details })))));
     });
 
-    return new Promise(resolve => {
-      importConflictResolve = resolve;
-      openModal(importConflictModal);
-      document.getElementById('importConflictOk').focus();
-    });
+    return importConflictAnswer.open(importConflictOk);
   }
 
   function setAllImportConflicts(checked) {
@@ -4832,27 +4828,18 @@ window.STANDALONE_WARNING_MB = 50;
   document.getElementById('importConflictAll').addEventListener('click', () => setAllImportConflicts(true));
   document.getElementById('importConflictNone').addEventListener('click', () => setAllImportConflicts(false));
 
-  document.getElementById('importConflictOk').addEventListener('click', () => {
-    const resolve = importConflictResolve;
-    importConflictResolve = null;
-    const notMerged = new Set(
+  importConflictOk.addEventListener('click', () => {
+    importConflictAnswer.answer(new Set(
       Array.from(importConflictList.querySelectorAll('input'))
         .filter(checkbox => !checkbox.checked)
         .map(checkbox => checkbox.conflict.newGroup)
-    );
-    closeModal(importConflictModal);
-    if (resolve) resolve(notMerged);
-  });
-
-  importConflictModal.addEventListener('modalclose', () => {
-    if (!importConflictResolve) return;
-    const resolve = importConflictResolve;
-    importConflictResolve = null;
-    resolve(null);
+    ));
   });
 
   // Sorts, then rebuilds filters, specification search and gallery.
-  function refreshGallery() {
+  // keepFilters (after a deletion, a rename or a category change): the categories, the search
+  // and the specification criteria still valid are kept. Otherwise (import, loading) they restart.
+  function refreshGallery({ keepFilters = false } = {}) {
     sortGroups();
 
     maxDepth = groups.reduce(
@@ -4860,17 +4847,25 @@ window.STANDALONE_WARNING_MB = 50;
       0
     );
 
-    selections = Array.from({ length: maxDepth }, () => []);
-    selectedKeys.clear();
+    if (keepFilters) {
+      selections = Array.from({ length: maxDepth }, (_, level) => selections[level] || []);
+      if (maxDepth) {
+        const available = getValuesAtLevel(0);
+        selections[0] = selectedAt(0).filter(value => available.includes(value));
+        pruneDescendants(0);
+      }
+    } else {
+      selections = Array.from({ length: maxDepth }, () => []);
+      selectedKeys.clear();
+      search.value = '';
+    }
 
     updateSummary();
-
     search.hidden = groups.length === 0;
-    search.value = '';
 
-    rebuildSpecificationCatalog();
+    rebuildSpecificationCatalog(keepFilters);
     renderFilters();
-    renderFilterSummary();
+    renderActiveFilters();
     renderGallery();
   }
 
@@ -4899,30 +4894,6 @@ window.STANDALONE_WARNING_MB = 50;
     group.files.sort((a, b) => compareText(a.name, b.name));
   }
 
-  // After a deletion or a category change: categories, search and specification criteria
-  // still valid are kept.
-  function refreshKeepingFilters() {
-    maxDepth = groups.reduce(
-      (maximum, group) => Math.max(maximum, getCategories(group).length),
-      0
-    );
-
-    selections = Array.from({ length: maxDepth }, (_, level) => selections[level] || []);
-    if (maxDepth) {
-      const available = getValuesAtLevel(0);
-      selections[0] = selectedAt(0).filter(value => available.includes(value));
-      pruneDescendants(0);
-    }
-
-    updateSummary();
-    search.hidden = groups.length === 0;
-
-    rebuildSpecificationCatalog(true);
-    renderFilters();
-    renderFilterSummary();
-    renderGallery();
-  }
-
   function serializeSpecification(specification) {
     if (!specification) return null;
     if (specification.data) {
@@ -4946,14 +4917,23 @@ window.STANDALONE_WARNING_MB = 50;
     };
   }
 
-  function serializeImage(item) {
-    return {
-      id: item.id,
-      name: item.name,
-      relativePath: item.relativePath,
-      type: item.type,
-      bytes: item.bytes
-    };
+  // Folders as saved in gc_specifications.js and in the standalone export; `imageLocation`
+  // gives what tells where each image is ({ chunk } or { block }).
+  function serializeGroups(imageLocation) {
+    return groups.map(group => ({
+      key: group.key,
+      title: group.title,
+      categoryPath: group.categoryPath,
+      specification: serializeSpecification(group.specification),
+      images: group.files.map(item => ({
+        id: item.id,
+        name: item.name,
+        relativePath: item.relativePath,
+        type: item.type,
+        bytes: item.bytes,
+        ...imageLocation(item)
+      }))
+    }));
   }
 
   // Restores a gallery saved in the data folder ('storage') or in a standalone file ('embedded').
@@ -4973,13 +4953,7 @@ window.STANDALONE_WARNING_MB = 50;
           revision: chunk.revision,
           imageIds: new Set()
         });
-        chunkSources.set(chunk.id, {
-          id: chunk.id,
-          type: 'script',
-          file: chunk.file,
-          src: `data/${chunk.file}`,
-          revision: chunk.revision
-        });
+        chunkSources.set(chunk.id, scriptChunkSource(chunk));
       });
     }
 
@@ -4989,7 +4963,6 @@ window.STANDALONE_WARNING_MB = 50;
       key: materiel.key,
       title: materiel.title,
       categoryPath: materiel.categoryPath || '',
-      path: materiel.categoryPath || '',
       specification: restoreSpecification(materiel.specification),
       files: (materiel.images || []).map(image => {
         let sourceChunk = null;
@@ -5014,20 +4987,15 @@ window.STANDALONE_WARNING_MB = 50;
 
         maxNumber = Math.max(maxNumber, imageNumber(image.id));
 
-        return {
+        return makeImageItem({
           id: image.id,
           name: image.name,
           relativePath: image.relativePath || image.name,
           type: image.type || mimeFromName(image.name),
           bytes: Number(image.bytes) || 0,
-          file: null,
-          dataUrl: null,
           sourceChunk,
-          storedChunk,
-          blob: null,
-          blobPromise: null,
-          url: ''
-        };
+          storedChunk
+        });
       })
     })).filter(group => group.files.length > 0);
 
@@ -5211,10 +5179,8 @@ window.STANDALONE_WARNING_MB = 50;
   let persistedChunks = new Map(); // what the data folder contains: id -> { id, kind, file, revision, imageIds }
   let persistedRevision = 0;
 
-  function megabytes(value, fallback) {
-    const number = Number(value);
-    return (Number.isFinite(number) && number > 0 ? number : fallback) * 1e6;
-  }
+  // The sizes of the configuration are always valid numbers (see normalizeConfig).
+  const megabytes = value => value * 1e6;
 
   function chunkNumber(id) {
     return parseInt(String(id).split('-').pop(), 10) || 0;
@@ -5232,8 +5198,8 @@ window.STANDALONE_WARNING_MB = 50;
   // are written again. New images fill the last file of their kind, then new files.
   function computeSavePlan() {
     const limits = {
-      covers: megabytes(config.files.coversMaxMb, 10),
-      images: megabytes(config.files.imagesMaxMb, 70)
+      covers: megabytes(config.files.coversMaxMb),
+      images: megabytes(config.files.imagesMaxMb)
     };
 
     const chunks = new Map();
@@ -5380,16 +5346,7 @@ window.STANDALONE_WARNING_MB = 50;
         count: chunk.imageIds.length,
         bytes: chunk.bytes
       })),
-      materiels: groups.map(group => ({
-        key: group.key,
-        title: group.title,
-        categoryPath: group.categoryPath,
-        specification: serializeSpecification(group.specification),
-        images: group.files.map(item => ({
-          ...serializeImage(item),
-          chunk: plan.assignment.get(item.id)
-        }))
-      }))
+      materiels: serializeGroups(item => ({ chunk: plan.assignment.get(item.id) }))
     };
 
     return new Blob([
@@ -5429,13 +5386,7 @@ window.STANDALONE_WARNING_MB = 50;
     committed.forEach(chunk => {
       const source = chunkSources.get(chunk.id);
       if (!source || source.type !== 'script') {
-        chunkSources.set(chunk.id, {
-          id: chunk.id,
-          type: 'script',
-          file: chunk.file,
-          src: `data/${chunk.file}`,
-          revision: chunk.revision
-        });
+        chunkSources.set(chunk.id, scriptChunkSource(chunk));
       } else if (!source.promise) {
         source.revision = chunk.revision;
       }
@@ -5602,7 +5553,7 @@ window.STANDALONE_WARNING_MB = 50;
       items.reduce((sum, item) => sum + item.bytes + ENTRY_OVERHEAD, 0) +
       groups.length * 600;
 
-    const warningBytes = megabytes(config.files.standaloneWarningMb, 50);
+    const warningBytes = megabytes(config.files.standaloneWarningMb);
     if (estimate > warningBytes) {
       const confirmed = await confirmDialog({
         title: 'Large standalone file',
@@ -5672,16 +5623,7 @@ window.STANDALONE_WARNING_MB = 50;
         exportedAt: new Date().toISOString(),
         nextImageId: nextImageNumber,
         config: serializeConfig(),
-        materiels: groups.map(group => ({
-          key: group.key,
-          title: group.title,
-          categoryPath: group.categoryPath,
-          specification: serializeSpecification(group.specification),
-          images: group.files.map(item => ({
-            ...serializeImage(item),
-            block: blockOf.has(item.id) ? blockOf.get(item.id) : null
-          }))
-        }))
+        materiels: serializeGroups(item => ({ block: blockOf.has(item.id) ? blockOf.get(item.id) : null }))
       };
 
       html = new Blob([
@@ -5895,7 +5837,7 @@ window.STANDALONE_WARNING_MB = 50;
       groups = groups.filter(candidate => candidate !== group);
       selectedKeys.delete(group.key);
       markChanged();
-      refreshKeepingFilters();
+      refreshGallery({ keepFilters: true });
       saveStatus.textContent = `“${group.title}” deleted (no image left).`;
       return;
     }
@@ -5972,14 +5914,10 @@ window.STANDALONE_WARNING_MB = 50;
     categoryTargets = [];
     if (!changed.length) return;
 
-    changed.forEach(group => {
-      group.categoryPath = path;
-      group.path = path;
-    });
+    changed.forEach(group => { group.categoryPath = path; });
 
     markChanged();
-    sortGroups();
-    refreshKeepingFilters();
+    refreshGallery({ keepFilters: true });
     if (viewerGroup) renderViewerMeta();
 
     saveStatus.textContent =
@@ -6034,8 +5972,7 @@ window.STANDALONE_WARNING_MB = 50;
     const previous = group.title;
     group.title = title;
     markChanged();
-    sortGroups();
-    refreshKeepingFilters();
+    refreshGallery({ keepFilters: true });
     if (viewerGroup === group) renderViewerMeta();
     saveStatus.textContent = `“${previous}” renamed “${title}”.`;
   }
@@ -6065,7 +6002,7 @@ window.STANDALONE_WARNING_MB = 50;
     groups = groups.filter(group => !selectedKeys.has(group.key));
     selectedKeys.clear();
     markChanged();
-    refreshKeepingFilters();
+    refreshGallery({ keepFilters: true });
     saveStatus.textContent =
       `${plural(doomed.length, 'folder')} deleted.`;
   });

@@ -30,7 +30,7 @@ The selected folders are only read: GalleryCon never modifies them.
 - **Top bar**, always in sight while scrolling: text search, **Categories** (blue) and
   **Specifications** (green) buttons opening their panels (closed by a click outside), statistics
   and card scale. The active filters (and the text search) show as chips in a strip stuck under
-  the bar, with the number of images and folders left: click a chip to remove it.
+  the bar, with the number of folders and images left: click a chip to remove it.
 - Search by technical specification: lengths compared in metres, origin and user countries.
 - Image viewer with thumbnails and the specifications of the folder.
 - **Edit mode** (Menu): delete, rename folders or change their category, add or delete images,

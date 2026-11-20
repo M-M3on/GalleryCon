@@ -18,8 +18,8 @@ Version 3.0
   "Specifications" buttons (with the number of active filters), statistics and scale; the edit
   bar is its second line. The active filters are chips in a strip stuck under the bar (a click
   removes one, "Clear all"): blue for the categories, green for the specifications, grey for
-  the text search. The strip also gives the number of images and folders left ("33 images in
-  11 folders").
+  the text search. The strip also gives the number of folders and images left ("11 folders ·
+  33 images").
   The two buttons open panels fixed under the first line of the bar, over the strip; they close
   with a click outside or Escape. Everything about specifications is green.
   The specification search adds a criterion from one list, shows one line per criterion and
@@ -776,7 +776,7 @@ footer {
 .active-chip.is-spec small { color: #3f9a78; }
 .active-chip.is-search { background: #eef0f3; color: var(--text); }
 .active-chip.is-search:hover { background: #e2e6ec; color: var(--text); }
-/* Number of images and folders left by the filters and the search. */
+/* Number of folders and images left by the filters and the search. */
 .result-count {
   flex: none;
   color: var(--muted);
@@ -4075,15 +4075,15 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     }
   }
 
-  // "36 images in 12 folders": what the filters and the search leave, in the active filter strip.
+  // "12 folders · 36 images": what the filters and the search leave, in the active filter strip.
   function updateResultCount() {
-    const images = visibleGroups.reduce((sum, group) => sum + group.files.length, 0);
     const folders = visibleGroups.length;
+    const images = visibleGroups.reduce((sum, group) => sum + group.files.length, 0);
     resultCount.replaceChildren(
-      el('strong', { text: String(images) }),
-      ` image${images !== 1 ? 's' : ''} in `,
       el('strong', { text: String(folders) }),
-      ` folder${folders !== 1 ? 's' : ''}`
+      ` folder${folders !== 1 ? 's' : ''} · `,
+      el('strong', { text: String(images) }),
+      ` image${images !== 1 ? 's' : ''}`
     );
   }
 

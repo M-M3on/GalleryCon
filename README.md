@@ -35,9 +35,11 @@ The selected folders are only read: GalleryCon never modifies them.
 - Image viewer with thumbnails and the specifications of the folder.
 - **Edit mode** (Menu): delete, rename folders or change their category, add or delete images,
   edit the specifications and create your own specification groups (name / value / unit lines).
-- **Add a folder**: when a folder of the import already exists in the gallery (same categories and
-  same name), a window lets you choose to merge it (its missing images are added) or to leave it
-  unchanged.
+- **Add a folder**: a loading window follows the reading of the folder. When the gallery is not
+  empty, a window sums up the import; for each folder already in the gallery (same categories
+  and same name), choose **Merge** (its missing images are added, its specifications kept),
+  **Replace** (it becomes the imported folder, images and specifications.json) or **Skip**.
+  **Replace the whole gallery** rebuilds the gallery from the folder.
 - **Settings** (Menu, always available): card size, *Fit to window* and specifications panel of
   the viewer at opening, specification criteria shown at opening (including the ones you add by
   hand; the values typed are never saved), bottom banner and data file sizes. **Use the current

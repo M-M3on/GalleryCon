@@ -11,8 +11,15 @@ Version 3.0
 - Specification editor: custom groups ("+ Custom group"), each holding name / value / unit
   lines; the group can be renamed or removed. Their numbers are searchable like the dimensions.
 - Image viewer: the thumbnails not loaded yet show a loading animation.
-- Add a folder: when folders of the import already exist in the gallery (same categories and
-  same name), a window asks which ones to merge; the others are left unchanged.
+- Image viewer, edit mode: "Paste image" button or Ctrl + V adds the images of the clipboard to
+  the folder, named "<folder> (n).ext".
+- Menu: "Add a folder" and "Replace with a folder" become one "Add a folder". Once the folder
+  is chosen, a loading window shows the progress of the reading.
+- Add a folder: when the gallery is not empty, a window sums up the import (new folders,
+  folders already present, folders already up to date). For each folder already present (same
+  categories and same name), choose Merge (its missing images are added, its specifications
+  kept), Replace (it becomes the imported folder: images and specifications.json) or Skip.
+  "Replace the whole gallery" rebuilds the gallery from the folder, as the former Replace did.
 - Edit mode: rename a folder (viewer, or edit bar with one folder selected).
 - Top bar following the top of the window, full width: search, "Categories" and
   "Specifications" buttons (with the number of active filters), statistics and scale; the edit
@@ -379,6 +386,56 @@ body.modal-open { overflow: hidden; }
 .conflict-list input { flex: none; width: 17px; height: 17px; accent-color: var(--accent); }
 .conflict-list span { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
 .conflict-list small { display: block; color: var(--muted); font-size: 12px; }
+.conflict-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.conflict-list li > span { flex: 1; }
+.conflict-choice {
+  flex: none;
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.conflict-choice label {
+  gap: 0;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+}
+.conflict-choice label + label { border-left: 1px solid var(--line); }
+.conflict-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.conflict-choice label:has(input:checked) { background: var(--accent); color: #fff; }
+.conflict-choice label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.conflict-whole {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.conflict-whole input { flex: none; width: 17px; height: 17px; margin-top: 1px; accent-color: var(--accent); }
+.conflict-whole small { display: block; color: var(--muted); font-size: 12px; }
+.import-progress { width: min(380px, 100%); text-align: center; }
+.import-progress h2 { overflow-wrap: anywhere; }
+.import-progress .modal-intro { margin-bottom: 0; }
+.import-spinner {
+  display: inline-block;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 10px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: gallerycon-spin .8s linear infinite;
+}
 .field-label {
   display: block;
   margin-bottom: 6px;
@@ -1385,6 +1442,15 @@ body.has-mention .filter-popover { max-height: calc(100vh - var(--popover-top, 7
   opacity: 1;
 }
 .viewer-thumb-add:hover { background: rgba(157,184,255,.15); color: white; }
+#viewerCaption .viewer-paste-image {
+  padding: 3px 10px;
+  border: 1px solid rgba(157,184,255,.45);
+  background: rgba(157,184,255,.14);
+  color: #dce5ff;
+  font-size: 12px;
+}
+#viewerCaption .viewer-paste-image:hover { background: rgba(157,184,255,.28); color: white; }
+#viewerCaption .viewer-paste-image[hidden] { display: none; }
 #viewerCaption .viewer-delete-image {
   padding: 3px 10px;
   border: 1px solid rgba(240,80,70,.45);
@@ -1861,6 +1927,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
       <div id="viewerCaption">
         <span id="viewerFilename"></span>
         <span id="viewerCounter"></span>
+        <button id="viewerPasteImage" class="viewer-paste-image" type="button" hidden>Paste image or Ctrl + V</button>
         <button id="viewerDeleteImage" class="viewer-delete-image" type="button" hidden>Delete image</button>
       </div>
       <div id="viewerThumbs" class="viewer-thumbs" aria-label="Images of this folder"></div>
@@ -1883,11 +1950,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
     <div class="menu-list">
       <div class="menu-item">
         <button id="menuAddFolder" type="button">Add a folder</button>
-        <p>Adds the folders of a tree to the current gallery. Your folder is never modified.</p>
-      </div>
-      <div class="menu-item">
-        <button id="menuReplaceFolder" class="button-secondary" type="button">Replace with a folder</button>
-        <p>Empties the gallery and rebuilds it from a folder.</p>
+        <p>Adds the folders of a tree to the gallery. Folders already present: merge, replace or skip. Your folder is never modified.</p>
       </div>
       <div class="menu-item">
         <button id="menuEditMode" class="button-secondary" type="button">Turn on edit mode</button>
@@ -1919,7 +1982,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
         <span class="help-step-number">1</span>
         <div>
           <strong>Import a folder</strong>
-          <p>Menu → Add or Replace. Each folder with images becomes a card; its parent folders become categories. When adding, a folder already in the gallery (same categories and same name) is merged only if you choose so.</p>
+          <p>Menu → Add a folder. Each folder with images becomes a card; its parent folders become categories. A folder already in the gallery (same categories and same name) is merged, replaced or skipped, as you choose. You can also replace the whole gallery.</p>
         </div>
       </li>
       <li class="help-step">
@@ -1996,7 +2059,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
         <li>Any other key with such lines (<code>Armament</code>) is a custom group, also created in edit mode with “+ Custom group”.</li>
         <li>Values are text: <code>"9.87"</code>, <code>"25 cm"</code>. <code>"INA"</code> or ranges are shown but not searchable.</li>
         <li>Lengths need a unit (mm, cm, m, km, in, ft, yd) to be searchable.</li>
-        <li>Edited by hand? Use Replace with a folder: Add keeps the specifications already in the gallery.</li>
+        <li>Edited by hand? Add the folder again and choose Replace for that folder: Merge keeps the specifications already in the gallery.</li>
       </ul>
     </div>
   </div>
@@ -2092,18 +2155,33 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
 <div id="importConflictModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="importConflictTitle">
   <div class="modal modal-wide">
     <button class="modal-close" type="button" data-close aria-label="Close">×</button>
-    <h2 id="importConflictTitle">Folders already in the gallery</h2>
+    <h2 id="importConflictTitle">Import</h2>
     <p id="importConflictIntro" class="modal-intro"></p>
-    <div class="conflict-tools">
-      <button id="importConflictAll" class="button-secondary" type="button">Merge all</button>
-      <button id="importConflictNone" class="button-secondary" type="button">Merge none</button>
+    <div id="importConflictBody">
+      <div class="conflict-tools">
+        <button id="importConflictMergeAll" class="button-secondary" type="button">Merge all</button>
+        <button id="importConflictReplaceAll" class="button-secondary" type="button">Replace all</button>
+        <button id="importConflictSkipAll" class="button-secondary" type="button">Skip all</button>
+      </div>
+      <ul id="importConflictList" class="conflict-list"></ul>
+      <p class="field-hint"><strong>Merge</strong>: the folder receives the images it does not have yet (same file name = same image) and keeps its specifications (it takes the imported ones only if it has none). <strong>Replace</strong>: the folder becomes the imported one, images and specifications.json. <strong>Skip</strong>: the folder stays unchanged.</p>
     </div>
-    <ul id="importConflictList" class="conflict-list"></ul>
-    <p class="field-hint">A merged folder receives the images it does not have yet (same file name = same image) and keeps its own specifications. A folder that is not merged stays unchanged: its images are not imported.</p>
+    <label class="conflict-whole">
+      <input id="importConflictWhole" type="checkbox">
+      <span>Replace the whole gallery<small id="importConflictWholeHint"></small></span>
+    </label>
     <div class="modal-footer">
       <button class="button-secondary" type="button" data-close>Cancel import</button>
       <button id="importConflictOk" type="button">Import</button>
     </div>
+  </div>
+</div>
+
+<div id="importProgressModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="importProgressTitle" data-locked>
+  <div class="modal import-progress">
+    <span class="import-spinner" aria-hidden="true"></span>
+    <h2 id="importProgressTitle">Importing</h2>
+    <p id="importProgressText" class="modal-intro" aria-live="polite"></p>
   </div>
 </div>
 
@@ -3714,6 +3792,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
     viewerFilename.textContent = item.name;
     viewerCounter.textContent = `${viewerIndex + 1} / ${viewerGroup.files.length}`;
+    viewerPasteImage.hidden = !editMode;
     viewerPrev.disabled = viewerGroup.files.length < 2;
     viewerNext.disabled = viewerGroup.files.length < 2;
     viewerDeleteImage.hidden = !editMode;
@@ -3799,7 +3878,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   document.addEventListener('keydown', event => {
     // An open window (menu, help, save...) takes Escape before the viewer.
     if (openModals.length) {
-      if (event.key === 'Escape') closeModal(openModals[openModals.length - 1]);
+      const top = openModals[openModals.length - 1];
+      if (event.key === 'Escape' && !top.hasAttribute('data-locked')) closeModal(top);
       return;
     }
     if (!viewer.classList.contains('open')) return;
@@ -4401,9 +4481,11 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     modal.dispatchEvent(new Event('modalclose'));
   }
 
-  // A click on the cross, on a [data-close] button or outside the window closes it.
+  // A click on the cross, on a [data-close] button or outside the window closes it,
+  // except for a locked window (data-locked: import in progress).
   document.querySelectorAll('.modal-backdrop').forEach(modal => {
     modal.addEventListener('click', event => {
+      if (modal.hasAttribute('data-locked')) return;
       if (event.target === modal || event.target.closest('[data-close]')) closeModal(modal);
     });
   });
@@ -4507,8 +4589,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     openModal(document.getElementById('aboutModal'));
   });
 
-  document.getElementById('menuAddFolder').addEventListener('click', () => chooseFolder('add'));
-  document.getElementById('menuReplaceFolder').addEventListener('click', () => chooseFolder('replace'));
+  document.getElementById('menuAddFolder').addEventListener('click', chooseFolder);
 
   menuSave.addEventListener('click', () => {
     closeModal(menuModal);
@@ -4679,36 +4760,58 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     return [...getCategories(group), group.title].join('/').toLowerCase();
   }
 
-  // Folders of an import that already exist in the gallery (same categories and same name)
-  // and would bring something: images not present yet, or specifications to a folder
-  // that has none.
-  function findImportConflicts(newGroups) {
+  // Specifications compared as written (null when the folder has none).
+  function sameSpecification(a, b) {
+    return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  }
+
+  // Sorts the folders of an import against the gallery (same categories and same name = same
+  // folder): new ones, ones already up to date (same image names, nothing new in the
+  // specifications) and conflicts, which differ and wait for a choice.
+  function analyzeImport(newGroups) {
     const byPath = new Map(groups.map(group => [galleryPathOf(group), group]));
-    const conflicts = [];
+    const analysis = { fresh: 0, identical: 0, conflicts: [] };
 
     newGroups.forEach(newGroup => {
       const existing = byPath.get(galleryPathOf(newGroup));
-      if (!existing) return;
+      if (!existing) {
+        analysis.fresh++;
+        return;
+      }
 
       const names = new Set(existing.files.map(item => item.name.toLowerCase()));
-      const newImages = newGroup.files.filter(item => !names.has(item.name.toLowerCase())).length;
-      const newSpecification = !existing.specification && Boolean(newGroup.specification);
+      const importedNames = new Set(newGroup.files.map(item => item.name.toLowerCase()));
+      const newImages = [...importedNames].filter(name => !names.has(name)).length;
+      const missingImages = [...names].filter(name => !importedNames.has(name)).length;
 
-      if (newImages || newSpecification) {
-        conflicts.push({ newGroup, existing, newImages, newSpecification });
+      let specState = 'none';
+      if (newGroup.specification) {
+        if (!existing.specification) specState = 'added';
+        else specState = sameSpecification(existing.specification, newGroup.specification) ? 'same' : 'different';
+      }
+
+      if (!newImages && !missingImages && specState !== 'added' && specState !== 'different') {
+        analysis.identical++;
+      } else {
+        analysis.conflicts.push({ newGroup, existing, newImages, missingImages, specState });
       }
     });
 
-    return conflicts;
+    return analysis;
   }
 
-  // Adds the folders of an import. A folder already present (same categories and same
-  // name) is merged unless it is in `notMerged`: it receives the images it does not have
-  // yet (same name = same image) and keeps its own specifications.json.
-  function mergeGroups(newGroups, notMerged = new Set()) {
+  // Adds the folders of an import. A folder already present (same categories and same name)
+  // follows its choice in `choices` (merge by default):
+  // - merge: it receives the images it does not have yet (same name = same image) and keeps
+  //   its own specifications.json (it takes the imported one only if it has none);
+  // - replace: it becomes the imported folder (images and specifications), keeping its key;
+  // - skip: it stays unchanged.
+  function mergeGroups(newGroups, choices = new Map()) {
     const byPath = new Map(groups.map(group => [galleryPathOf(group), group]));
     const keys = new Set(groups.map(group => group.key));
-    const result = { addedImages: 0, addedFolders: 0, mergedFolders: 0, ignoredFolders: 0, skipped: 0 };
+    const result = {
+      addedImages: 0, addedFolders: 0, mergedFolders: 0, replacedFolders: 0, ignoredFolders: 0, skipped: 0
+    };
 
     newGroups.forEach(newGroup => {
       const path = galleryPathOf(newGroup);
@@ -4729,8 +4832,18 @@ const GALLERYCON_DEFAULTS = Object.freeze({
         return;
       }
 
-      if (notMerged.has(newGroup)) {
+      const choice = choices.get(newGroup) || 'merge';
+      if (choice === 'skip') {
         result.ignoredFolders++;
+        return;
+      }
+
+      if (choice === 'replace') {
+        releaseImages(existing.files);
+        existing.files = newGroup.files;
+        existing.specification = newGroup.specification;
+        result.addedImages += newGroup.files.length;
+        result.replacedFolders++;
         return;
       }
 
@@ -4759,50 +4872,98 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     return result;
   }
 
-  /* Window asking which existing folders receive the imported images.
-     Resolves with the Set of the new groups NOT to merge, or null when the import is cancelled. */
+  /* Window summing up an import into a gallery that is not empty: a choice (merge, replace,
+     skip) for each folder already present, or the replacement of the whole gallery.
+     Resolves with { wholeGallery: true }, with { choices: Map(newGroup -> choice) }, or with
+     null when the import is cancelled. */
   const importConflictModal = document.getElementById('importConflictModal');
   const importConflictIntro = document.getElementById('importConflictIntro');
+  const importConflictBody = document.getElementById('importConflictBody');
   const importConflictList = document.getElementById('importConflictList');
+  const importConflictWhole = document.getElementById('importConflictWhole');
+  const importConflictWholeHint = document.getElementById('importConflictWholeHint');
   const importConflictOk = document.getElementById('importConflictOk');
   const importConflictAnswer = modalPromise(importConflictModal, null);
+  const IMPORT_CHOICES = [['merge', 'Merge'], ['replace', 'Replace'], ['skip', 'Skip']];
+  let importConflictCount = 0;
 
-  function askImportConflicts(conflicts) {
-    importConflictIntro.textContent = conflicts.length === 1
-      ? 'This folder of the import already exists in the gallery, with the same categories and the same name. Merge it?'
-      : `${conflicts.length} folders of the import already exist in the gallery, with the same categories and the same name. Choose the ones to merge.`;
+  function conflictDetails(conflict) {
+    const parts = [];
+    if (conflict.newImages) parts.push(plural(conflict.newImages, 'new image'));
+    if (conflict.specState === 'added') parts.push('new specifications');
+    if (conflict.specState === 'different') parts.push('specifications differ');
+    if (conflict.missingImages) {
+      parts.push(`${plural(conflict.missingImages, 'image')} only in the gallery`);
+    }
+    parts.push(`${plural(conflict.existing.files.length, 'image')} in the gallery`);
+    return parts.join(' · ');
+  }
+
+  function updateImportConflictView() {
+    const whole = importConflictWhole.checked;
+    importConflictBody.hidden = whole || !importConflictCount;
+    importConflictOk.textContent = whole ? 'Replace the gallery' : 'Import';
+    importConflictOk.classList.toggle('button-danger', whole);
+  }
+
+  function askImportConflicts(analysis, newGroups, rootName) {
+    const { fresh, identical, conflicts } = analysis;
+    importConflictCount = conflicts.length;
+
+    const summary = [];
+    if (fresh) summary.push(plural(fresh, 'new folder'));
+    if (conflicts.length) summary.push(`${conflicts.length} already in the gallery`);
+    if (identical) summary.push(`${identical} already up to date`);
+    importConflictIntro.textContent = `“${rootName}”: ${summary.join(' · ')}.` +
+      (conflicts.length
+        ? ' Choose what to do with each folder already in the gallery (same categories and same name).'
+        : '');
 
     importConflictList.replaceChildren();
-    conflicts.forEach(conflict => {
-      const checkbox = el('input', { type: 'checkbox', checked: true });
-      checkbox.conflict = conflict;
+    conflicts.forEach((conflict, index) => {
+      const choice = el('span', { class: 'conflict-choice', attrs: { role: 'radiogroup' } });
+      IMPORT_CHOICES.forEach(([value, label]) => {
+        const radio = el('input', { type: 'radio', name: `importChoice${index}`, value, checked: value === 'merge' });
+        choice.append(el('label', {}, radio, label));
+      });
 
-      const parts = [];
-      if (conflict.newImages) parts.push(plural(conflict.newImages, 'new image'));
-      if (conflict.newSpecification) parts.push('specifications');
-      const details = `${parts.join(' + ')} · ${plural(conflict.existing.files.length, 'image')} in the gallery`;
-
-      importConflictList.append(el('li', {}, el('label', {}, checkbox,
+      const item = el('li', {},
         el('span', { text: [...getCategories(conflict.existing), conflict.existing.title].join(' / ') },
-          el('small', { text: details })))));
+          el('small', { text: conflictDetails(conflict) })),
+        choice);
+      item.conflict = conflict;
+      importConflictList.append(item);
     });
+
+    importConflictWhole.checked = false;
+    importConflictWholeHint.textContent =
+      `The ${plural(groups.length, 'folder')} of the gallery are removed and replaced by the ` +
+      `${plural(newGroups.length, 'folder')} of the import.`;
+    updateImportConflictView();
 
     return importConflictAnswer.open(importConflictOk);
   }
 
-  function setAllImportConflicts(checked) {
-    importConflictList.querySelectorAll('input').forEach(checkbox => { checkbox.checked = checked; });
+  function setAllImportChoices(value) {
+    importConflictList.querySelectorAll(`input[value="${value}"]`).forEach(radio => { radio.checked = true; });
   }
 
-  document.getElementById('importConflictAll').addEventListener('click', () => setAllImportConflicts(true));
-  document.getElementById('importConflictNone').addEventListener('click', () => setAllImportConflicts(false));
+  document.getElementById('importConflictMergeAll').addEventListener('click', () => setAllImportChoices('merge'));
+  document.getElementById('importConflictReplaceAll').addEventListener('click', () => setAllImportChoices('replace'));
+  document.getElementById('importConflictSkipAll').addEventListener('click', () => setAllImportChoices('skip'));
+  importConflictWhole.addEventListener('change', updateImportConflictView);
 
   importConflictOk.addEventListener('click', () => {
-    importConflictAnswer.answer(new Set(
-      Array.from(importConflictList.querySelectorAll('input'))
-        .filter(checkbox => !checkbox.checked)
-        .map(checkbox => checkbox.conflict.newGroup)
-    ));
+    if (importConflictWhole.checked) {
+      importConflictAnswer.answer({ wholeGallery: true });
+      return;
+    }
+    const choices = new Map();
+    importConflictList.querySelectorAll('li').forEach(item => {
+      const checked = item.querySelector('input:checked');
+      choices.set(item.conflict.newGroup, checked ? checked.value : 'merge');
+    });
+    importConflictAnswer.answer({ choices });
   });
 
   // Sorts, then rebuilds filters, specification search and gallery.
@@ -4984,7 +5145,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   }
 
   /* ----------------------------------------
-     IMPORT A FOLDER (ADD OR REPLACE)
+     IMPORT A FOLDER
      The selected folders are read only: they are never modified.
   ---------------------------------------- */
 
@@ -4997,11 +5158,19 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     });
   }
 
-  let importMode = 'add';
+  // Loading window, shown from the choice of the folder to the end of its reading.
+  // It is locked (data-locked): neither Escape nor a click outside closes it.
+  const importProgressModal = document.getElementById('importProgressModal');
+  const importProgressTitle = document.getElementById('importProgressTitle');
+  const importProgressText = document.getElementById('importProgressText');
+  const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
 
-  function chooseFolder(mode) {
+  function showImportProgress(text) {
+    importProgressText.textContent = text;
+  }
+
+  function chooseFolder() {
     if (busy) return;
-    importMode = mode;
     closeModal(menuModal);
     input.click();
   }
@@ -5013,7 +5182,13 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
     setBusy(true);
     clearErrors('Import');
-    saveStatus.textContent = 'Reading folder…';
+    saveStatus.textContent = '';
+
+    const rootName = (files[0].webkitRelativePath || '').split('/')[0] || 'the selected folder';
+    importProgressTitle.textContent = `Importing “${rootName}”`;
+    showImportProgress(`Reading ${plural(files.length, 'file')}…`);
+    openModal(importProgressModal);
+    await nextFrame(); // the window shows before the reading
 
     try {
       const imageFiles = files.filter(file =>
@@ -5031,7 +5206,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
         const relativePath = file.webkitRelativePath || file.name;
 
         if (i % 50 === 0) {
-          saveStatus.textContent = `Reading specifications ${i + 1} / ${specificationFiles.length}…`;
+          showImportProgress(`Reading specifications ${i + 1} / ${specificationFiles.length}…`);
         }
 
         try {
@@ -5045,6 +5220,9 @@ const GALLERYCON_DEFAULTS = Object.freeze({
         }
       }
 
+      showImportProgress(`Building folders from ${plural(imageFiles.length, 'image')}…`);
+      await nextFrame();
+
       const newGroups = buildGroups(
         imageFiles.map(file => ({
           name: file.name,
@@ -5056,55 +5234,54 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
       if (!newGroups.length) {
         reportError('Import', 'The selected folder contains no images.');
-        saveStatus.textContent = '';
         return;
       }
 
-      const rootName = (files[0].webkitRelativePath || '').split('/')[0] || 'the selected folder';
       const imageCount = newGroups.reduce((sum, group) => sum + group.files.length, 0);
+      let answer = { choices: new Map() };
 
-      if (importMode === 'replace') {
-        if (groups.length) {
+      // Gallery not empty: summary and choices (merge, replace, skip, whole gallery).
+      if (groups.length) {
+        showImportProgress('Comparing with the gallery…');
+        await nextFrame();
+        const analysis = analyzeImport(newGroups);
+        closeModal(importProgressModal);
+
+        answer = await askImportConflicts(analysis, newGroups, rootName);
+        if (answer && answer.wholeGallery) {
           const confirmed = await confirmDialog({
             title: 'Replace the gallery?',
             message:
-              `The current gallery (${groups.length} folders) will be replaced by ` +
-              `${newGroups.length} folders from “${rootName}”.\n` +
+              `The current gallery (${plural(groups.length, 'folder')}) will be replaced by ` +
+              `${plural(newGroups.length, 'folder')} from “${rootName}”.\n` +
               'The data folder only changes when you copy the files given by “Save changes”.',
             confirmLabel: 'Replace',
             danger: true
           });
-
-          if (!confirmed) {
-            saveStatus.textContent = 'Import cancelled.';
-            return;
-          }
+          if (!confirmed) answer = null;
         }
 
+        if (!answer) {
+          saveStatus.textContent = 'Import cancelled.';
+          return;
+        }
+      }
+
+      if (answer.wholeGallery) {
         replaceGroups(newGroups);
         markChanged();
         saveStatus.textContent =
-          `Gallery replaced: ${newGroups.length} folders, ${imageCount} images from “${rootName}”.`;
+          `Gallery replaced: ${plural(newGroups.length, 'folder')}, ${plural(imageCount, 'image')} from “${rootName}”.`;
       } else {
-        const conflicts = findImportConflicts(newGroups);
-        let notMerged = new Set();
-        if (conflicts.length) {
-          notMerged = await askImportConflicts(conflicts);
-          if (!notMerged) {
-            saveStatus.textContent = 'Import cancelled.';
-            return;
-          }
-        }
+        const result = mergeGroups(newGroups, answer.choices);
+        if (result.addedImages || result.mergedFolders || result.replacedFolders) markChanged();
 
-        const result = mergeGroups(newGroups, notMerged);
-        if (result.addedImages || result.mergedFolders) markChanged();
+        const folders = [plural(result.addedFolders, 'new folder')];
+        if (result.mergedFolders) folders.push(plural(result.mergedFolders, 'merged folder'));
+        if (result.replacedFolders) folders.push(plural(result.replacedFolders, 'replaced folder'));
 
         saveStatus.textContent =
-          `${plural(result.addedImages, 'image')} added ` +
-          `(${plural(result.addedFolders, 'new folder')}` +
-          (result.mergedFolders
-            ? `, ${plural(result.mergedFolders, 'merged folder')}`
-            : '') + ')' +
+          `${plural(result.addedImages, 'image')} added (${folders.join(', ')})` +
           (result.ignoredFolders
             ? ` · ${plural(result.ignoredFolders, 'existing folder')} left unchanged`
             : '') +
@@ -5115,8 +5292,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     } catch (error) {
       console.error(error);
       reportError('Import', error.message || 'The folder could not be read.');
-      saveStatus.textContent = '';
     } finally {
+      closeModal(importProgressModal);
       setBusy(false);
     }
   });
@@ -5714,6 +5891,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   ---------------------------------------- */
 
   const imageInput = document.getElementById('imageInput');
+  const viewerPasteImage = document.getElementById('viewerPasteImage');
   const viewerDeleteImage = document.getElementById('viewerDeleteImage');
 
   // Rebuilds the card of a folder in place (its first image may have changed).
@@ -5727,11 +5905,9 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     imageInput.click();
   }
 
-  imageInput.addEventListener('change', () => {
-    const files = Array.from(imageInput.files || []);
-    imageInput.value = '';
-    const group = viewerGroup;
-    if (!files.length || !group) return;
+  // Adds image files to a folder (file picker or clipboard); returns the number added.
+  function addViewerImageFiles(files, group = viewerGroup) {
+    if (!group || !files.length) return 0;
 
     const names = new Set(group.files.map(item => item.name.toLowerCase()));
     const added = [];
@@ -5739,7 +5915,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     let ignored = 0;
 
     files.forEach(file => {
-      if (!(imageExt.test(file.name) || file.type.startsWith('image/'))) {
+      if (!(imageExt.test(file.name || '') || (file.type && file.type.startsWith('image/')))) {
         ignored++;
         return;
       }
@@ -5760,9 +5936,12 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       sortFiles(group);
       markChanged();
       updateSummary();
-      viewerIndex = group.files.indexOf(added[0]);
-      renderViewerThumbs();
-      updateViewer();
+      // The viewer may have been closed or moved to another folder meanwhile.
+      if (viewerGroup === group) {
+        viewerIndex = group.files.indexOf(added[0]);
+        renderViewerThumbs();
+        updateViewer();
+      }
       refreshCard(group);
     }
 
@@ -5770,6 +5949,97 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       `${plural(added.length, 'image')} added to “${group.title}”` +
       (skipped ? ` · ${skipped} already present` : '') +
       (ignored ? ` · ${ignored} not an image` : '') + '.';
+    return added.length;
+  }
+
+  const CLIPBOARD_EXTENSIONS = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'image/bmp': 'bmp',
+    'image/avif': 'avif'
+  };
+
+  // Names pasted images "<folder> (n).ext", n being the first number free in the whole
+  // gallery. The names given in the same paste are reserved too, so that several images
+  // pasted at once do not all get the same name.
+  function nameClipboardImages(group, blobs) {
+    const base = group.title
+      .replace(/[\\/:*?"<>|]/g, '-')
+      .replace(/[. ]+$/g, '')
+      .trim() || 'Folder';
+    const usedNames = new Set(
+      groups.flatMap(folder => folder.files.map(item => item.name.toLowerCase()))
+    );
+    let number = 1;
+    return blobs.map(blob => {
+      const type = blob.type || 'image/png';
+      const extension = CLIPBOARD_EXTENSIONS[type] || 'png';
+      let name;
+      do {
+        name = `${base} (${number}).${extension}`;
+        number++;
+      } while (usedNames.has(name.toLowerCase()));
+      usedNames.add(name.toLowerCase());
+      return new File([blob], name, { type, lastModified: Date.now() });
+    });
+  }
+
+  // "Paste image" button: reads the clipboard through the asynchronous API. Browsers may
+  // refuse it (local file, permission): Ctrl + V stays available (paste handler below).
+  async function pasteImageToViewerGroup() {
+    const group = viewerGroup;
+    if (!group || !editMode || busy) return;
+    if (!navigator.clipboard || !navigator.clipboard.read) {
+      saveStatus.textContent = 'This browser does not let the page read the clipboard: use Ctrl + V.';
+      return;
+    }
+
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      const blobs = [];
+      for (const clipboardItem of clipboardItems) {
+        const imageType = clipboardItem.types.find(type => type.startsWith('image/'));
+        if (!imageType) continue;
+        const blob = await clipboardItem.getType(imageType);
+        blobs.push(blob.type ? blob : new Blob([blob], { type: imageType }));
+      }
+      if (viewerGroup !== group || !editMode || busy) return;
+      if (!blobs.length) {
+        saveStatus.textContent = 'No image was found in the clipboard.';
+        return;
+      }
+      addViewerImageFiles(nameClipboardImages(group, blobs), group);
+    } catch (error) {
+      saveStatus.textContent = 'The clipboard could not be read: use Ctrl + V.';
+    }
+  }
+
+  viewerPasteImage.addEventListener('click', pasteImageToViewerGroup);
+
+  // Ctrl + V in the viewer, in edit mode. Ignored in a text field and while a window
+  // (confirmation, editor) is open over the viewer.
+  document.addEventListener('paste', event => {
+    const target = event.target;
+    if (!viewerGroup || !editMode || busy || openModals.length) return;
+    if (target && (target.isContentEditable ||
+        /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+
+    const blobs = Array.from(event.clipboardData?.items || [])
+      .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter(Boolean);
+    if (!blobs.length) return;
+    event.preventDefault();
+    addViewerImageFiles(nameClipboardImages(viewerGroup, blobs), viewerGroup);
+  });
+
+  imageInput.addEventListener('change', () => {
+    const files = Array.from(imageInput.files || []);
+    imageInput.value = '';
+    if (!files.length || !viewerGroup) return;
+    addViewerImageFiles(files, viewerGroup);
   });
 
   viewerDeleteImage.addEventListener('click', async () => {

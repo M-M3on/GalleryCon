@@ -6,10 +6,13 @@ One HTML file, no server, no installation: your images never leave your computer
 ## Getting started
 
 1. Download `GalleryCon.html` and put it in a folder named `GalleryCon`.
-2. Open it in your browser (Chrome, Edge, Firefox or Safari).
+2. Open it in your browser on a computer: Chrome, Edge (121 or later), Firefox or Safari (16.4
+   or later). On iPhone and iPad, a folder cannot be chosen.
 3. **Menu → Add a folder**, then pick the root of your image tree.
 
-Each folder containing images becomes a card; its parent folders become categories.
+Each folder containing images becomes a card; its parent folders become categories. Images in
+JPEG, PNG, WebP, AVIF, GIF, BMP or SVG are read; TIFF, HEIC and camera formats (shown by no
+browser but Safari) are listed in the errors and skipped.
 
 ```
 My_collection/
@@ -53,7 +56,11 @@ The selected folders are only read: GalleryCon never modifies them.
 ## Saving the gallery
 
 A browser cannot write to your disk, so **Menu → Save changes** lists the modified files to
-download. Copy them into the `data` folder next to `GalleryCon.html`, replacing the old ones:
+download. Copy them into the `data` folder next to `GalleryCon.html`, replacing the old ones,
+then click **Done: files copied**: until then the changes stay unsaved, since the page cannot
+see a download that the browser blocked or renamed. Keep the exact names: a copy renamed
+`gc_config (1).js` is never read (GalleryCon reports it at opening). Edge may flag a `.js` file:
+choose **Keep**.
 
 ```
 GalleryCon/

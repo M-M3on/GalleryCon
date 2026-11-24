@@ -7,6 +7,23 @@
 <!--
 CHANGELOG
 
+Version 3.1
+- Compatibility (Edge, Chrome, Safari):
+  - Add a folder no longer stays stuck on "Reading n files…" in Edge: the loading window no
+    longer waits for a frame Chromium may hold back, and always closes, even after an error.
+  - Save changes: once every file is downloaded, "Done: files copied" confirms the save. A
+    download blocked or renamed by the browser no longer passes for saved: closed without
+    confirming, the changes stay unsaved. Hints for Edge (".js" file flagged: Keep).
+  - At opening, a renamed copy in the data folder (gc_specifications (1).js, gc_config(1).js…)
+    is reported: the old file would stay in use.
+  - TIFF, HEIC and camera formats are refused at the import (no browser but Safari shows TIFF)
+    and named in the errors.
+  - Names compared in the same Unicode form: a folder with accents written on macOS is found
+    again at the import (Merge / Replace / Skip).
+  - A browser that does not read AVIF says so once.
+  - Bands aligned with a classic scrollbar (Windows, Chromium on Linux); top bar blurred in
+    Safari before 18.
+
 Version 3.0
 - Specification editor: custom groups ("+ Custom group"), each holding name / value / unit
   lines; the group can be renamed or removed. Their numbers are searchable like the dimensions.
@@ -82,7 +99,9 @@ body {
 }
 header {
   position: relative;
-  padding: 30px max(22px, calc((100vw - 1440px)/2));
+  /* 100% and not 100vw: 100vw counts the vertical scrollbar (Windows, Chromium on Linux),
+     which shifted the bands. */
+  padding: 30px max(22px, calc((100% - 1440px)/2));
   background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
@@ -610,6 +629,8 @@ body.modal-open { overflow: hidden; }
 }
 .save-message[hidden] { display: none; }
 .save-done { background: #f1faf4; color: #1f7a3f; }
+.save-done p { margin: 0; }
+.save-done button { margin-top: 10px; }
 .save-empty { background: #f8f9fb; color: var(--muted); }
 .save-hints {
   margin: 16px 0 0;
@@ -723,6 +744,7 @@ footer {
   background: rgba(255,255,255,.96);
   border-bottom: 1px solid var(--line);
   box-shadow: 0 4px 14px rgba(24,33,43,.05);
+  -webkit-backdrop-filter: blur(6px); /* Safari before 18 */
   backdrop-filter: blur(6px);
 }
 .top-bar-row {
@@ -730,7 +752,7 @@ footer {
   align-items: center;
   gap: 10px;
   min-height: 56px;
-  padding: 8px max(22px, calc((100vw - 1440px)/2));
+  padding: 8px max(22px, calc((100% - 1440px)/2));
 }
 #search {
   flex: 0 1 260px;
@@ -799,7 +821,7 @@ footer {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px max(22px, calc((100vw - 1440px)/2));
+  padding: 6px max(22px, calc((100% - 1440px)/2));
   background: #f7f9fc;
   border-top: 1px solid var(--line);
 }
@@ -896,7 +918,7 @@ footer {
 .filter-popover {
   position: fixed;
   z-index: 16;
-  width: min(560px, calc(100vw - 24px));
+  width: min(560px, calc(100% - 24px));
   max-height: calc(100vh - var(--popover-top, 70px) - 16px);
   overflow: auto;
   background: var(--surface);
@@ -905,7 +927,7 @@ footer {
   box-shadow: 0 18px 44px rgba(9,13,20,.18);
 }
 body.has-mention .filter-popover { max-height: calc(100vh - var(--popover-top, 70px) - 16px - var(--mention-height)); }
-.filter-popover-wide { width: min(640px, calc(100vw - 24px)); }
+.filter-popover-wide { width: min(640px, calc(100% - 24px)); }
 .category-popover { border-top: 3px solid var(--accent); }
 .spec-popover { border-top: 3px solid var(--spec); }
 .spec-popover .popover-head strong { color: var(--spec); }
@@ -1105,7 +1127,7 @@ body.has-mention .filter-popover { max-height: calc(100vh - var(--popover-top, 7
   .scale-label { display: none; }
   .top-filter-buttons { order: 3; }
   .active-strip { padding: 6px 14px; }
-  .filter-popover, .filter-popover-wide { left: 12px !important; width: calc(100vw - 24px); }
+  .filter-popover, .filter-popover-wide { left: 12px !important; width: calc(100% - 24px); }
   .filter-row { flex-direction: column; gap: 5px; }
   .filter-label { flex: auto; padding-top: 0; }
   .spec-criterion { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 26px; }
@@ -1667,7 +1689,7 @@ body.has-mention .filter-popover { max-height: calc(100vh - var(--popover-top, 7
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 7px max(22px, calc((100vw - 1440px)/2));
+  padding: 7px max(22px, calc((100% - 1440px)/2));
   background: #f4f7ff;
   border-top: 2px solid var(--accent);
 }
@@ -2010,7 +2032,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
         <span class="help-step-number">5</span>
         <div>
           <strong>Save</strong>
-          <p>Menu → Save changes. Download the listed files and copy them into the <code>data</code> folder. Menu → Settings gathers the display at opening, the specification criteria shown at opening, the bottom banner and the data file sizes: Save settings downloads <code>gc_config.js</code>.</p>
+          <p>Menu → Save changes. Download the listed files, copy them into the <code>data</code> folder under their exact names, then click <strong>Done: files copied</strong>. Menu → Settings gathers the display at opening, the specification criteria shown at opening, the bottom banner and the data file sizes: Save settings downloads <code>gc_config.js</code>.</p>
         </div>
       </li>
       <li class="help-step">
@@ -2076,11 +2098,18 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
       <div class="save-section-title">Files to delete from the data folder</div>
       <ul id="saveDeleteList" class="save-delete-list"></ul>
     </div>
-    <p id="saveDone" class="save-message save-done" hidden>All files are downloaded. Copy them into the data folder to finish saving.</p>
+    <!-- The page cannot know whether the browser blocked or renamed a download: the save
+         only counts once confirmed. -->
+    <div id="saveDone" class="save-message save-done" hidden>
+      <p>All files are downloaded. Check that each one is in your Downloads folder under its exact name, copy them into the data folder, then confirm.</p>
+      <button id="saveConfirm" type="button">Done: files copied</button>
+    </div>
     <ul class="save-hints">
       <li>Only the modified files are listed.</li>
-      <li>If the browser renames a file (<code>gc_images-01 (1).js</code>), give it back its exact name.</li>
-      <li>The browser may ask permission to download several files: accept it.</li>
+      <li>The browser may ask permission to download several files: accept it. If it refuses, a file is missing from your Downloads folder: use its <strong>Download again</strong> button.</li>
+      <li>If the browser renames a file (<code>gc_config (1).js</code>, <code>gc_config(1).js</code>), give it back its exact name: otherwise the old file stays in use.</li>
+      <li>Edge or Chrome may flag a <code>.js</code> file as unsafe: choose <strong>Keep</strong>. These files only hold your gallery data.</li>
+      <li>Closing this window without confirming keeps the changes unsaved: they are listed again next time.</li>
     </ul>
     <div class="modal-footer">
       <button class="button-secondary" type="button" data-close>Close</button>
@@ -2259,7 +2288,7 @@ body.has-mention .modal { max-height: calc(100vh - 36px - var(--mention-height))
 
 <script>
 // Single place to bump the version (also add an entry to the CHANGELOG at the top of the file).
-window.APP_VERSION = '3.0';
+window.APP_VERSION = '3.1';
 document.querySelectorAll('.app-version').forEach(element => {
   element.textContent = `v${window.APP_VERSION}`;
 });
@@ -2324,7 +2353,34 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
   const saveStatus = document.getElementById('saveStatus');
 
-  const imageExt = /\.(avif|bmp|gif|jpe?g|png|svg|webp|tiff?)$/i;
+  // Images that every browser shows. TIFF (Safari only), HEIC and the camera formats are
+  // refused at the import: they would stay "missing" in Edge, Chrome and Firefox.
+  const imageExt = /\.(avif|bmp|gif|jpe?g|png|svg|webp)$/i;
+  const unsupportedImageExt = /\.(tiff?|heic|heif|jxl|psd|dng|cr2|cr3|nef|arw|orf|rw2)$/i;
+  const DISPLAYABLE_TYPES = new Set([
+    'image/avif', 'image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'
+  ]);
+
+  function isDisplayableImage(file) {
+    const name = file.name || '';
+    if (imageExt.test(name)) return true;
+    return !unsupportedImageExt.test(name) && DISPLAYABLE_TYPES.has(file.type);
+  }
+
+  // An image file in a format the browsers do not show.
+  function isUnsupportedImage(file) {
+    return !isDisplayableImage(file) &&
+      (unsupportedImageExt.test(file.name || '') || String(file.type || '').startsWith('image/'));
+  }
+
+  // Name compared without case nor Unicode form: macOS may write "é" as "e" + accent (NFD)
+  // where Windows and Linux write one character (NFC).
+  function nameKey(name) {
+    return String(name || '').normalize('NFC').toLowerCase();
+  }
+
+  // Path or name of a file read from a folder, in the NFC form.
+  const nfc = text => String(text || '').normalize('NFC');
   const scaleDown = document.getElementById('scaleDown');
   const scaleUp = document.getElementById('scaleUp');
   const scaleValue = document.getElementById('scaleValue');
@@ -4379,6 +4435,19 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
   // Shows an image in an <img>, loading its data file first if needed.
   // The holder keeps its "loading" state until the image is decoded (lazy images included).
+  // AVIF needs a recent browser (Edge 121, Chrome 85, Firefox 93, Safari 16.4). The first AVIF
+  // image that fails while none has been shown yet gives the reason once.
+  let avifShown = false;
+  let avifWarned = false;
+
+  function checkAvifFailure(item) {
+    if (avifShown || avifWarned || item.type !== 'image/avif') return;
+    avifWarned = true;
+    reportError('Loading',
+      'An AVIF image could not be shown. If no image of the gallery shows, this browser does not ' +
+      'read AVIF: update it (Edge 121, Chrome 85, Firefox 93, Safari 16.4 or later).');
+  }
+
   function showImage(img, holder, item) {
     img.alt = item.name;
     img.dataset.imageId = item.id;
@@ -4386,12 +4455,14 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
     const setSource = url => {
       img.onload = () => {
+        if (item.type === 'image/avif') avifShown = true;
         if (img.dataset.imageId === item.id) holder.classList.remove('is-loading');
       };
       img.onerror = () => {
         if (img.dataset.imageId !== item.id || !img.getAttribute('src')) return;
         holder.classList.remove('is-loading');
         holder.classList.add('is-missing');
+        checkAvifFailure(item);
       };
       img.src = url;
       img.classList.remove('is-pending');
@@ -4757,7 +4828,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   // Identifies a folder by its categories and its name, as shown in the gallery
   // ("land/tanks/leclerc"), case ignored.
   function galleryPathOf(group) {
-    return [...getCategories(group), group.title].join('/').toLowerCase();
+    return nameKey([...getCategories(group), group.title].join('/'));
   }
 
   // Specifications compared as written (null when the folder has none).
@@ -4779,8 +4850,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
         return;
       }
 
-      const names = new Set(existing.files.map(item => item.name.toLowerCase()));
-      const importedNames = new Set(newGroup.files.map(item => item.name.toLowerCase()));
+      const names = new Set(existing.files.map(item => nameKey(item.name)));
+      const importedNames = new Set(newGroup.files.map(item => nameKey(item.name)));
       const newImages = [...importedNames].filter(name => !names.has(name)).length;
       const missingImages = [...names].filter(name => !importedNames.has(name)).length;
 
@@ -4848,9 +4919,9 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       }
 
       let addedHere = 0;
-      const names = new Set(existing.files.map(item => item.name.toLowerCase()));
+      const names = new Set(existing.files.map(item => nameKey(item.name)));
       newGroup.files.forEach(item => {
-        const name = item.name.toLowerCase();
+        const name = nameKey(item.name);
         if (names.has(name)) {
           result.skipped++;
           return;
@@ -5163,7 +5234,19 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   const importProgressModal = document.getElementById('importProgressModal');
   const importProgressTitle = document.getElementById('importProgressTitle');
   const importProgressText = document.getElementById('importProgressText');
-  const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+  // Lets the window paint before a long task. Chromium (Edge, Chrome) may hold back
+  // requestAnimationFrame (window hidden or covered, return from the file picker): a timer
+  // takes over so that the import never waits for a frame that does not come.
+  const nextFrame = () => new Promise(resolve => {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      setTimeout(resolve, 0);
+    };
+    requestAnimationFrame(go);
+    setTimeout(go, 100);
+  });
 
   function showImportProgress(text) {
     importProgressText.textContent = text;
@@ -5188,12 +5271,21 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     importProgressTitle.textContent = `Importing “${rootName}”`;
     showImportProgress(`Reading ${plural(files.length, 'file')}…`);
     openModal(importProgressModal);
-    await nextFrame(); // the window shows before the reading
 
+    // Everything after the opening is in the try: the finally always closes the window.
     try {
-      const imageFiles = files.filter(file =>
-        imageExt.test(file.name) || file.type.startsWith('image/')
-      );
+      await nextFrame(); // the window shows before the reading
+
+      const imageFiles = files.filter(isDisplayableImage);
+
+      // TIFF, HEIC…: named in the errors rather than shown as missing images.
+      const unsupportedFiles = files.filter(isUnsupportedImage);
+      if (unsupportedFiles.length) {
+        const names = unsupportedFiles.slice(0, 5).map(file => file.webkitRelativePath || file.name).join(', ');
+        reportError('Import',
+          `${plural(unsupportedFiles.length, 'image')} ignored, in a format the browsers do not show ` +
+          `(TIFF, HEIC…): ${names}${unsupportedFiles.length > 5 ? '…' : ''}. Convert them to JPEG, PNG, WebP or AVIF.`);
+      }
 
       const specificationFiles = files.filter(file =>
         file.name.toLowerCase() === 'specifications.json'
@@ -5203,7 +5295,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
 
       for (let i = 0; i < specificationFiles.length; i++) {
         const file = specificationFiles[i];
-        const relativePath = file.webkitRelativePath || file.name;
+        const relativePath = nfc(file.webkitRelativePath || file.name);
 
         if (i % 50 === 0) {
           showImportProgress(`Reading specifications ${i + 1} / ${specificationFiles.length}…`);
@@ -5224,16 +5316,21 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       await nextFrame();
 
       const newGroups = buildGroups(
+        // NFC paths: the same folder written on macOS or on Windows gets the same key.
         imageFiles.map(file => ({
-          name: file.name,
+          name: nfc(file.name),
           file,
-          relativePath: file.webkitRelativePath || file.name
+          relativePath: nfc(file.webkitRelativePath || file.name)
         })),
         specificationRecords
       );
 
       if (!newGroups.length) {
-        reportError('Import', 'The selected folder contains no images.');
+        // The files received are named: a browser that gives only part of the folder shows.
+        const received = files.slice(0, 5).map(file => file.webkitRelativePath || file.name).join(', ');
+        reportError('Import',
+          `The selected folder contains no images (${plural(files.length, 'file')} received: ` +
+          `${received}${files.length > 5 ? '…' : ''}).`);
         return;
       }
 
@@ -5492,7 +5589,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     ], { type: 'text/javascript;charset=utf-8' });
   }
 
-  // Once every file is downloaded, the plan becomes the content of the data folder.
+  // Once the files are downloaded and their copy confirmed, the plan becomes the content of
+  // the data folder.
   function commitSavePlan(plan) {
     const committed = new Map();
 
@@ -5549,6 +5647,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   const saveDeleteSection = document.getElementById('saveDeleteSection');
   const saveDeleteList = document.getElementById('saveDeleteList');
   const saveDone = document.getElementById('saveDone');
+  const saveConfirm = document.getElementById('saveConfirm');
   const saveAll = document.getElementById('saveAll');
 
   let savePlan = null;
@@ -5625,9 +5724,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       write.status.textContent = `Downloaded · ${formatSize(blob.size)}`;
       write.button.textContent = 'Download again';
 
+      // Everything downloaded: the save waits for the confirmation (saveConfirm).
       if (!savePlan.committed && downloadedFiles.size === savePlan.writes.length) {
-        commitSavePlan(savePlan);
-        savePlan.committed = true;
         saveDone.hidden = false;
       }
       return true;
@@ -5642,6 +5740,24 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       setSaveButtonsDisabled(false);
     }
   }
+
+  // Confirmed by the user: the plan becomes the content of the data folder.
+  saveConfirm.addEventListener('click', () => {
+    if (!savePlan || savePlan.committed) return;
+    commitSavePlan(savePlan);
+    savePlan.committed = true;
+    closeModal(saveModal);
+    saveStatus.textContent = 'Changes saved in the data folder.';
+  });
+
+  // Closed with every file downloaded but no confirmation: the changes stay unsaved.
+  saveModal.addEventListener('modalclose', () => {
+    if (savePlan && !savePlan.committed && !savePlan.empty &&
+        downloadedFiles.size === savePlan.writes.length) {
+      saveStatus.textContent =
+        'Save not confirmed: the changes stay unsaved. “Save changes” lists the files again.';
+    }
+  });
 
   saveAll.addEventListener('click', async () => {
     if (!savePlan) return;
@@ -5909,25 +6025,28 @@ const GALLERYCON_DEFAULTS = Object.freeze({
   function addViewerImageFiles(files, group = viewerGroup) {
     if (!group || !files.length) return 0;
 
-    const names = new Set(group.files.map(item => item.name.toLowerCase()));
+    const names = new Set(group.files.map(item => nameKey(item.name)));
     const added = [];
     let skipped = 0;
     let ignored = 0;
+    let unsupported = 0;
 
     files.forEach(file => {
-      if (!(imageExt.test(file.name || '') || (file.type && file.type.startsWith('image/')))) {
-        ignored++;
+      if (!isDisplayableImage(file)) {
+        if (isUnsupportedImage(file)) unsupported++;
+        else ignored++;
         return;
       }
-      const name = file.name.toLowerCase();
+      const fileName = nfc(file.name);
+      const name = nameKey(fileName);
       if (names.has(name)) {
         skipped++;
         return;
       }
       names.add(name);
 
-      const relativePath = [group.categoryPath, group.title, file.name].filter(Boolean).join('/');
-      const item = createImageItem({ name: file.name, file }, relativePath);
+      const relativePath = [group.categoryPath, group.title, fileName].filter(Boolean).join('/');
+      const item = createImageItem({ name: fileName, file }, relativePath);
       group.files.push(item);
       added.push(item);
     });
@@ -5948,7 +6067,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
     saveStatus.textContent =
       `${plural(added.length, 'image')} added to “${group.title}”` +
       (skipped ? ` · ${skipped} already present` : '') +
-      (ignored ? ` · ${ignored} not an image` : '') + '.';
+      (ignored ? ` · ${ignored} not an image` : '') +
+      (unsupported ? ` · ${unsupported} in a format the browsers do not show (TIFF, HEIC…)` : '') + '.';
     return added.length;
   }
 
@@ -5970,7 +6090,7 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       .replace(/[. ]+$/g, '')
       .trim() || 'Folder';
     const usedNames = new Set(
-      groups.flatMap(folder => folder.files.map(item => item.name.toLowerCase()))
+      groups.flatMap(folder => folder.files.map(item => nameKey(item.name)))
     );
     let number = 1;
     return blobs.map(blob => {
@@ -5980,8 +6100,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       do {
         name = `${base} (${number}).${extension}`;
         number++;
-      } while (usedNames.has(name.toLowerCase()));
-      usedNames.add(name.toLowerCase());
+      } while (usedNames.has(nameKey(name)));
+      usedNames.add(nameKey(name));
       return new File([blob], name, { type, lastModified: Date.now() });
     });
   }
@@ -6426,6 +6546,34 @@ const GALLERYCON_DEFAULTS = Object.freeze({
       });
   }
 
+  // A download renamed by the browser ("gc_config (1).js" in Edge and Chrome, "gc_config(1).js"
+  // in Firefox) and copied as is into the data folder is never read: the old file stays in
+  // use. Its presence is reported. The image files have their own check (revision).
+  async function checkRenamedDataFiles() {
+    const found = [];
+    for (const base of ['gc_specifications', 'gc_config']) {
+      for (const suffix of [' (1)', '(1)']) {
+        const file = `${base}${suffix}.js`;
+        try {
+          await loadScript(`data/${file}`);
+          found.push(file);
+        } catch {
+          // Not there: nothing to report.
+        }
+        // The probed file never replaces the data already read.
+        delete window.GALLERYCON_SPECIFICATIONS;
+        delete window.GALLERYCON_CONFIG;
+      }
+    }
+
+    found.forEach(file => {
+      const exact = file.replace(/ ?\(1\)\.js$/, '.js');
+      reportError('Loading',
+        `data/${file} found: a download renamed by the browser? Rename it ${exact}, ` +
+        `replacing the old file, then reload the page. Until then, ${exact} is used.`);
+    });
+  }
+
   function loadDataFolder() {
     summary.textContent = 'Loading the gallery…';
 
@@ -6446,7 +6594,8 @@ const GALLERYCON_DEFAULTS = Object.freeze({
         // No data folder yet: empty gallery.
         summary.textContent = 'Open the Menu to add a folder.';
         updateUnsavedState();
-      });
+      })
+      .then(checkRenamedDataFiles);
   }
 
   const embeddedData = document.getElementById('embeddedGalleryData');
